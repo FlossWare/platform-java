@@ -229,6 +229,49 @@ mvn test
 
 ## Running the Platform
 
+### Configuration
+
+JPlatform supports two configuration approaches that can be combined:
+
+**1. Configuration File (platform.yaml):**
+
+Create a `platform.yaml` file to configure all platform features:
+
+```yaml
+api:
+  enabled: true
+  port: 8080
+  bindAddress: 0.0.0.0
+
+metrics:
+  jmx:
+    enabled: true
+    port: 9999
+    domain: org.flossware.jplatform
+  prometheus:
+    enabled: true
+    port: 9090
+    path: /metrics
+
+watcher:
+  enabled: true
+  watchDirectory: /var/jplatform/apps
+  autoStart: true
+  autoDeploy: true
+```
+
+**2. Command-Line Flags:**
+
+Command-line flags override configuration file settings:
+
+```bash
+# Use custom configuration file
+java -jar jplatform-launcher-1.0.jar --config /path/to/custom.yaml
+
+# Override specific settings from file
+java -jar jplatform-launcher-1.0.jar --config platform.yaml --port 9000
+```
+
 ### Using the Launcher
 
 The launcher supports multiple optional features via command-line flags:
@@ -236,6 +279,9 @@ The launcher supports multiple optional features via command-line flags:
 ```bash
 # Basic launcher (interactive CLI only)
 java -jar jplatform-launcher/target/jplatform-launcher-1.0.jar
+
+# Load configuration from platform.yaml
+java -jar jplatform-launcher/target/jplatform-launcher-1.0.jar --config platform.yaml
 
 # Enable REST API on port 8080
 java -jar jplatform-launcher/target/jplatform-launcher-1.0.jar --rest-api
@@ -252,7 +298,7 @@ java -jar jplatform-launcher/target/jplatform-launcher-1.0.jar --prometheus
 # Enable filesystem watcher for auto-deployment
 java -jar jplatform-launcher/target/jplatform-launcher-1.0.jar --watch-dir /var/jplatform/apps
 
-# Enable all features
+# Enable all features (via config file or flags)
 java -jar jplatform-launcher/target/jplatform-launcher-1.0.jar \
   --rest-api --web-console \
   --jmx-port 9999 --prometheus \

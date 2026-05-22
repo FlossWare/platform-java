@@ -108,67 +108,50 @@ public class PlatformLauncher {
         String watchDirectory = null;
 
         static LauncherConfig parse(String[] args) {
-            LauncherConfig config = new LauncherConfig();
-
+            // Check for --config flag first
+            String configFile = "platform.yaml";
             for (int i = 0; i < args.length; i++) {
-                String arg = args[i];
-
-                switch (arg) {
-                    case "--rest-api":
-                        config.restApiEnabled = true;
-                        break;
-
-                    case "--port":
-                        if (i + 1 < args.length) {
-                            config.restApiPort = Integer.parseInt(args[++i]);
-                            config.restApiEnabled = true; // Implied
-                        }
-                        break;
-
-                    case "--web-console":
-                        config.webConsoleEnabled = true;
-                        config.restApiEnabled = true; // Web console requires REST API
-                        break;
-
-                    case "--jmx-port":
-                        if (i + 1 < args.length) {
-                            config.jmxPort = Integer.parseInt(args[++i]);
-                            config.jmxEnabled = true;
-                        }
-                        break;
-
-                    case "--prometheus":
-                        config.prometheusEnabled = true;
-                        break;
-
-                    case "--prometheus-port":
-                        if (i + 1 < args.length) {
-                            config.prometheusPort = Integer.parseInt(args[++i]);
-                            config.prometheusEnabled = true;
-                        }
-                        break;
-
-                    case "--watch-dir":
-                        if (i + 1 < args.length) {
-                            config.watchDirectory = args[++i];
-                            config.watcherEnabled = true;
-                        }
-                        break;
-
-                    case "--help":
-                    case "-h":
-                        printStartupHelp();
-                        System.exit(0);
-                        break;
-
-                    default:
-                        if (arg.startsWith("--")) {
-                            System.err.println("Unknown argument: " + arg);
-                            printStartupHelp();
-                            System.exit(1);
-                        }
+                if ("--config".equals(args[i]) && i + 1 < args.length) {
+                    configFile = args[++i];
+                    break;
                 }
             }
+
+            // Load platform configuration from file
+            PlatformConfig platformConfig = PlatformConfig.load(configFile);
+
+            // Merge command-line arguments (they override file settings)
+            platformConfig.mergeCommandLineArgs(args);
+
+            // Check for help flag
+            for (String arg : args) {
+                if ("--help".equals(arg) || "-h".equals(arg)) {
+                    printStartupHelp();
+                    System.exit(0);
+                }
+            }
+
+            // Convert to LauncherConfig
+            return fromPlatformConfig(platformConfig);
+        }
+
+        static LauncherConfig fromPlatformConfig(PlatformConfig platformConfig) {
+            LauncherConfig config = new LauncherConfig();
+
+            config.restApiEnabled = platformConfig.getApi().isEnabled();
+            config.restApiPort = platformConfig.getApi().getPort();
+
+            config.jmxEnabled = platformConfig.getMetrics().getJmx().isEnabled();
+            config.jmxPort = platformConfig.getMetrics().getJmx().getPort();
+
+            config.prometheusEnabled = platformConfig.getMetrics().getPrometheus().isEnabled();
+            config.prometheusPort = platformConfig.getMetrics().getPrometheus().getPort();
+
+            config.watcherEnabled = platformConfig.getWatcher().isEnabled();
+            config.watchDirectory = platformConfig.getWatcher().getWatchDirectory();
+
+            // Web console is enabled if API is enabled (same as before)
+            config.webConsoleEnabled = config.restApiEnabled;
 
             return config;
         }
@@ -179,18 +162,22 @@ public class PlatformLauncher {
             System.out.println("Usage: java -jar jplatform-launcher.jar [options]");
             System.out.println();
             System.out.println("Options:");
+            System.out.println("  --config <file>         Load configuration from YAML file (default: platform.yaml)");
             System.out.println("  --rest-api              Enable REST API server (default port 8080)");
             System.out.println("  --port <number>         Specify port for REST API (implies --rest-api)");
             System.out.println("  --web-console           Enable web console (implies --rest-api)");
             System.out.println("  --jmx-port <number>     Enable JMX metrics on specified port");
+            System.out.println("  --prometheus            Enable Prometheus metrics (default port 9090)");
+            System.out.println("  --prometheus-port <n>   Specify port for Prometheus metrics");
             System.out.println("  --watch-dir <path>      Enable filesystem watcher for auto-deployment");
             System.out.println("  --help, -h              Show this help message");
             System.out.println();
             System.out.println("Examples:");
             System.out.println("  java -jar jplatform-launcher.jar");
+            System.out.println("  java -jar jplatform-launcher.jar --config production.yaml");
             System.out.println("  java -jar jplatform-launcher.jar --rest-api --web-console");
             System.out.println("  java -jar jplatform-launcher.jar --rest-api --port 9090 --jmx-port 9999");
-            System.out.println("  java -jar jplatform-launcher.jar --watch-dir /var/jplatform/apps");
+            System.out.println("  java -jar jplatform-launcher.jar --prometheus --watch-dir /var/jplatform/apps");
         }
     }
 

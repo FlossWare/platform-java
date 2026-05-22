@@ -253,7 +253,7 @@ curl -X DELETE http://localhost:8080/api/applications/api-app
 
 ## Production Deployment
 
-For production use, enable all features:
+For production use, enable all features via command-line:
 
 ```bash
 java -jar jplatform-launcher-1.0.jar \
@@ -266,12 +266,50 @@ java -jar jplatform-launcher-1.0.jar \
   --watch-dir /var/jplatform/apps
 ```
 
+Or better yet, use a configuration file (`platform.yaml`):
+
+```yaml
+api:
+  enabled: true
+  port: 8080
+  bindAddress: 0.0.0.0
+
+metrics:
+  jmx:
+    enabled: true
+    port: 9999
+    domain: org.flossware.jplatform
+  prometheus:
+    enabled: true
+    port: 9090
+    path: /metrics
+
+watcher:
+  enabled: true
+  watchDirectory: /var/jplatform/apps
+  autoStart: true
+  autoDeploy: true
+```
+
+Then launch with:
+
+```bash
+java -jar jplatform-launcher-1.0.jar --config platform.yaml
+```
+
 This gives you:
 - REST API on port 8080
 - Web console at http://localhost:8080/console
 - JMX metrics on port 9999
 - Prometheus metrics on port 9090
 - Auto-deployment from /var/jplatform/apps
+
+Command-line flags override configuration file settings:
+
+```bash
+# Override port from config file
+java -jar jplatform-launcher-1.0.jar --config platform.yaml --port 9000
+```
 
 ## Next Steps
 

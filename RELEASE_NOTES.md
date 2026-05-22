@@ -22,6 +22,12 @@ JPlatform 1.0 is a production-ready Java application platform that enables runni
 - **Web Console**: Modern browser-based UI with real-time metrics charts
 - **Interactive CLI**: Enhanced command-line interface with descriptor support
 
+### Platform Configuration (NEW)
+- **platform.yaml Support**: Load all platform settings from YAML configuration file
+- **Command-Line Overrides**: CLI flags override file settings for flexibility
+- **--config Flag**: Specify custom configuration file location
+- **Simplified Production Deployment**: Single config file instead of many CLI flags
+
 ### Monitoring & Metrics (NEW)
 - **JMX Metrics**: Expose application metrics via JMX MBeans
   - Compatible with JConsole, VisualVM, and other JMX tools
@@ -75,14 +81,44 @@ GET    /api/health                    - Health check
 - `jplatform-samples` - Sample applications
 
 ### Test Coverage
-- **500+ unit tests** across all modules
-- **90%+ code coverage** (all production modules)
-- **Integration tests** for all deployment methods
-- **Full test suite passes** in CI/CD pipelines
+- **547 unit and integration tests** across all modules
+- **85%+ code coverage** (average across all modules)
+- **15 integration tests** for end-to-end verification
+- **100% test pass rate** in CI/CD pipelines
 
-## Command-Line Flags
+## Configuration
+
+### Platform Configuration File (NEW)
+
+JPlatform supports loading configuration from a YAML file (`platform.yaml`):
+
+```yaml
+api:
+  enabled: true
+  port: 8080
+metrics:
+  jmx:
+    enabled: true
+    port: 9999
+  prometheus:
+    enabled: true
+    port: 9090
+watcher:
+  enabled: true
+  watchDirectory: /var/jplatform/apps
+```
+
+Load with:
+```bash
+java -jar jplatform-launcher-1.0.jar --config platform.yaml
+```
+
+### Command-Line Flags
 
 ```bash
+# Configuration file
+--config <file>             # Load configuration from YAML file
+
 # Enable specific features
 --rest-api                  # Enable REST API (port 8080)
 --port <number>             # Specify REST API port
@@ -92,11 +128,17 @@ GET    /api/health                    - Health check
 --prometheus-port <number>  # Specify Prometheus port
 --watch-dir <path>          # Enable filesystem watcher
 
-# Production example
+# Production example (command-line)
 java -jar jplatform-launcher-1.0.jar \
   --rest-api --web-console \
   --jmx-port 9999 --prometheus \
   --watch-dir /var/jplatform/apps
+
+# Production example (config file)
+java -jar jplatform-launcher-1.0.jar --config platform.yaml
+
+# Override config file settings
+java -jar jplatform-launcher-1.0.jar --config platform.yaml --port 9000
 ```
 
 ## Supported Deployment Formats
