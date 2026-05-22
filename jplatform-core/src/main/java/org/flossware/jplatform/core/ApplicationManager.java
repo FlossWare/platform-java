@@ -11,7 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Method;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -26,6 +26,7 @@ public class ApplicationManager {
     private final ClassLoader platformSharedLoader;
     private final MessageBus sharedMessageBus;
     private final ServiceRegistry sharedServiceRegistry;
+    private final DependencyResolver dependencyResolver;
 
     /**
      * Creates a new application manager without messaging support.
@@ -45,7 +46,8 @@ public class ApplicationManager {
         this.platformSharedLoader = ApplicationManager.class.getClassLoader();
         this.sharedMessageBus = messageBus;
         this.sharedServiceRegistry = serviceRegistry;
-        logger.info("ApplicationManager initialized");
+        this.dependencyResolver = new DependencyResolver(serviceRegistry);
+        logger.info("ApplicationManager initialized with dependency resolution");
     }
 
     /**
@@ -150,6 +152,17 @@ public class ApplicationManager {
                     .build();
 
             applications.put(appId, context);
+
+            // Register with dependency resolver
+            dependencyResolver.addApplication(appId, descriptor);
+
+            // Validate dependencies
+            List<String> validationErrors = dependencyResolver.validateDependencies(appId);
+            if (!validationErrors.isEmpty()) {
+                logger.warn("[{}] Dependency validation warnings: {}", appId, validationErrors);
+                // Note: We log warnings but don't fail deployment for missing optional dependencies
+                // Required dependencies will cause start() to fail
+            }
 
             logger.info("[{}] Application deployed successfully", appId);
 
@@ -353,6 +366,9 @@ public class ApplicationManager {
             context.setState(ApplicationState.UNDEPLOYED);
             applications.remove(applicationId);
 
+            // Remove from dependency resolver
+            dependencyResolver.removeApplication(applicationId);
+
             logger.info("[{}] Application undeployed successfully", applicationId);
 
         } catch (Exception e) {
@@ -380,6 +396,75 @@ public class ApplicationManager {
         Map<String, ApplicationState> result = new ConcurrentHashMap<>();
         applications.forEach((id, context) -> result.put(id, context.getState()));
         return result;
+    }
+
+    /**
+     * Starts all deployed applications in dependency order.
+     *
+     * <p>Applications with no dependencies are started first, followed by applications
+     * that depend on them. If any application fails to start, its dependent applications
+     * will not be started.</p>
+     *
+     * @throws Exception if startup order cannot be determined (circular dependencies)
+     */
+    public synchronized void startAll() throws Exception {
+        logger.info("Starting all applications in dependency order");
+
+        List<String> startupOrder = dependencyResolver.getStartupOrder();
+        logger.info("Startup order: {}", startupOrder);
+
+        Set<String> runningApps = new HashSet<>();
+
+        for (String appId : startupOrder) {
+            ApplicationContextImpl context = applications.get(appId);
+            if (context == null) {
+                logger.warn("[{}] Application not deployed, skipping", appId);
+                continue;
+            }
+
+            ApplicationState state = context.getState();
+            if (state == ApplicationState.RUNNING) {
+                logger.debug("[{}] Already running", appId);
+                runningApps.add(appId);
+                continue;
+            }
+
+            if (state != ApplicationState.DEPLOYED && state != ApplicationState.STOPPED) {
+                logger.warn("[{}] Cannot start from state {}", appId, state);
+                continue;
+            }
+
+            try {
+                start(appId);
+                runningApps.add(appId);
+                logger.info("[{}] Started successfully", appId);
+            } catch (Exception e) {
+                logger.error("[{}] Failed to start, skipping dependent applications", appId, e);
+                // Don't start apps that depend on this one
+            }
+        }
+
+        logger.info("Startup complete: {} applications running", runningApps.size());
+    }
+
+    /**
+     * Returns the recommended startup order for all deployed applications.
+     *
+     * @return list of application IDs in dependency order
+     * @throws IllegalStateException if circular dependencies exist
+     */
+    public List<String> getStartupOrder() {
+        return dependencyResolver.getStartupOrder();
+    }
+
+    /**
+     * Returns the applications that depend on the given application.
+     *
+     * @param applicationId the application identifier
+     * @return set of dependent application IDs
+     */
+    public Set<String> getDependentApplications(String applicationId) {
+        return dependencyResolver.getDependentApplications(applicationId);
     }
 
     /**

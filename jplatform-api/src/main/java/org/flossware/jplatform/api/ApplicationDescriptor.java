@@ -38,6 +38,7 @@ public class ApplicationDescriptor {
     private final Map<String, String> properties;
     private final boolean enableMessaging;
     private final List<VolumeMount> volumes;  // Added in 2.0
+    private final List<ApplicationDependency> dependencies;  // Added in 2.0
 
     private ApplicationDescriptor(Builder builder) {
         this.applicationId = Objects.requireNonNull(builder.applicationId, "applicationId is required");
@@ -57,6 +58,8 @@ public class ApplicationDescriptor {
         this.enableMessaging = builder.enableMessaging;
         this.volumes = builder.volumes != null ?
                 List.copyOf(builder.volumes) : Collections.emptyList();
+        this.dependencies = builder.dependencies != null ?
+                List.copyOf(builder.dependencies) : Collections.emptyList();
     }
 
     /**
@@ -160,6 +163,16 @@ public class ApplicationDescriptor {
     }
 
     /**
+     * Returns the dependencies declared for this application.
+     *
+     * @return immutable list of application dependencies
+     * @since 2.0
+     */
+    public List<ApplicationDependency> getDependencies() {
+        return dependencies;
+    }
+
+    /**
      * Creates a new builder for constructing application descriptors.
      *
      * @return a new builder instance
@@ -185,6 +198,7 @@ public class ApplicationDescriptor {
         private Map<String, String> properties;
         private boolean enableMessaging;
         private List<VolumeMount> volumes;  // Added in 2.0
+        private List<ApplicationDependency> dependencies;  // Added in 2.0
 
         /**
          * Sets the application identifier (required).
@@ -349,6 +363,22 @@ public class ApplicationDescriptor {
                 this.volumes = new ArrayList<>();
             }
             this.volumes.add(volume);
+            return this;
+        }
+
+        /**
+         * Adds a dependency on a service provided by another application.
+         * Dependencies are validated at deploy time and determine startup order.
+         *
+         * @param dependency the application dependency
+         * @return this builder
+         * @since 2.0
+         */
+        public Builder addDependency(ApplicationDependency dependency) {
+            if (this.dependencies == null) {
+                this.dependencies = new ArrayList<>();
+            }
+            this.dependencies.add(dependency);
             return this;
         }
 
