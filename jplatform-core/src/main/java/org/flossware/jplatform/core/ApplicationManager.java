@@ -27,6 +27,7 @@ public class ApplicationManager {
     private final MessageBus sharedMessageBus;
     private final ServiceRegistry sharedServiceRegistry;
     private final DependencyResolver dependencyResolver;
+    private final ApplicationReloader reloader;
 
     /**
      * Creates a new application manager without messaging support.
@@ -47,7 +48,8 @@ public class ApplicationManager {
         this.sharedMessageBus = messageBus;
         this.sharedServiceRegistry = serviceRegistry;
         this.dependencyResolver = new DependencyResolver(serviceRegistry);
-        logger.info("ApplicationManager initialized with dependency resolution");
+        this.reloader = new ApplicationReloader(platformSharedLoader);
+        logger.info("ApplicationManager initialized with dependency resolution and hot reload");
     }
 
     /**
@@ -369,11 +371,56 @@ public class ApplicationManager {
             // Remove from dependency resolver
             dependencyResolver.removeApplication(applicationId);
 
+            // Clear reload history
+            reloader.clearHistory(applicationId);
+
             logger.info("[{}] Application undeployed successfully", applicationId);
 
         } catch (Exception e) {
             logger.error("[{}] Failed to undeploy application", applicationId, e);
             throw new Exception("Failed to undeploy application: " + applicationId, e);
+        }
+    }
+
+    /**
+     * Reloads an application with new code without full undeploy/deploy cycle.
+     *
+     * <p>This performs a hot code reload by:</p>
+     * <ul>
+     *   <li>Creating a new classloader with updated JAR files</li>
+     *   <li>Preserving application state (if ReloadableApplication)</li>
+     *   <li>Swapping classloader atomically</li>
+     *   <li>Creating new application instance</li>
+     *   <li>Restoring state and restarting if was running</li>
+     * </ul>
+     *
+     * @param applicationId the application to reload
+     * @param newDescriptor the new descriptor with updated classpath
+     * @throws Exception if reload fails
+     * @throws IllegalStateException if application is not deployed
+     */
+    public synchronized void reload(String applicationId, ApplicationDescriptor newDescriptor) throws Exception {
+        ApplicationContextImpl context = applications.get(applicationId);
+
+        if (context == null) {
+            throw new IllegalStateException("Application not deployed: " + applicationId);
+        }
+
+        logger.info("[{}] Initiating hot code reload", applicationId);
+
+        try {
+            reloader.reload(applicationId, newDescriptor, context, this);
+
+            // Update dependency resolver with new descriptor
+            dependencyResolver.removeApplication(applicationId);
+            dependencyResolver.addApplication(applicationId, newDescriptor);
+
+            logger.info("[{}] Hot reload successful - now on version {}",
+                    applicationId, reloader.getCurrentVersion(applicationId));
+
+        } catch (Exception e) {
+            logger.error("[{}] Hot reload failed", applicationId, e);
+            throw new Exception("Failed to reload application: " + applicationId, e);
         }
     }
 

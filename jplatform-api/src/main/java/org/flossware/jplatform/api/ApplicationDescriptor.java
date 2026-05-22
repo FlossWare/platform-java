@@ -39,6 +39,8 @@ public class ApplicationDescriptor {
     private final boolean enableMessaging;
     private final List<VolumeMount> volumes;  // Added in 2.0
     private final List<ApplicationDependency> dependencies;  // Added in 2.0
+    private final List<NativeLibrary> nativeLibraries;  // Added in 2.0
+    private final boolean nativeImage;  // Added in 2.0
 
     private ApplicationDescriptor(Builder builder) {
         this.applicationId = Objects.requireNonNull(builder.applicationId, "applicationId is required");
@@ -60,6 +62,9 @@ public class ApplicationDescriptor {
                 List.copyOf(builder.volumes) : Collections.emptyList();
         this.dependencies = builder.dependencies != null ?
                 List.copyOf(builder.dependencies) : Collections.emptyList();
+        this.nativeLibraries = builder.nativeLibraries != null ?
+                List.copyOf(builder.nativeLibraries) : Collections.emptyList();
+        this.nativeImage = builder.nativeImage;
     }
 
     /**
@@ -173,6 +178,26 @@ public class ApplicationDescriptor {
     }
 
     /**
+     * Returns the native libraries defined for this application.
+     *
+     * @return immutable list of native libraries
+     * @since 2.0
+     */
+    public List<NativeLibrary> getNativeLibraries() {
+        return nativeLibraries;
+    }
+
+    /**
+     * Checks if this is a GraalVM native image application.
+     *
+     * @return true if native image, false if standard JVM application
+     * @since 2.0
+     */
+    public boolean isNativeImage() {
+        return nativeImage;
+    }
+
+    /**
      * Creates a new builder for constructing application descriptors.
      *
      * @return a new builder instance
@@ -199,6 +224,8 @@ public class ApplicationDescriptor {
         private boolean enableMessaging;
         private List<VolumeMount> volumes;  // Added in 2.0
         private List<ApplicationDependency> dependencies;  // Added in 2.0
+        private List<NativeLibrary> nativeLibraries;  // Added in 2.0
+        private boolean nativeImage;  // Added in 2.0
 
         /**
          * Sets the application identifier (required).
@@ -379,6 +406,35 @@ public class ApplicationDescriptor {
                 this.dependencies = new ArrayList<>();
             }
             this.dependencies.add(dependency);
+            return this;
+        }
+
+        /**
+         * Adds a native library to load for this application.
+         * The platform will load libraries matching the current OS and architecture.
+         *
+         * @param library the native library descriptor
+         * @return this builder
+         * @since 2.0
+         */
+        public Builder addNativeLibrary(NativeLibrary library) {
+            if (this.nativeLibraries == null) {
+                this.nativeLibraries = new ArrayList<>();
+            }
+            this.nativeLibraries.add(library);
+            return this;
+        }
+
+        /**
+         * Sets whether this application is a GraalVM native image.
+         * Native image applications are launched as separate processes, not JVM applications.
+         *
+         * @param nativeImage true if this is a native image, false for standard JVM application
+         * @return this builder
+         * @since 2.0
+         */
+        public Builder nativeImage(boolean nativeImage) {
+            this.nativeImage = nativeImage;
             return this;
         }
 

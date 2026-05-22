@@ -13,9 +13,9 @@ import java.util.Optional;
 public class ApplicationContextImpl implements ApplicationContext {
 
     private final String applicationId;
-    private final ApplicationDescriptor descriptor;
+    private volatile ApplicationDescriptor descriptor;  // Swappable during hot reload
     private volatile ApplicationState state;
-    private final ClassLoader classLoader;
+    private volatile ClassLoader classLoader;  // Swappable during hot reload
     private final ThreadPoolExecutor threadPool;
     private final SecurityPolicy securityPolicy;
     private final ResourceMonitor resourceMonitor;
@@ -123,6 +123,26 @@ public class ApplicationContextImpl implements ApplicationContext {
      */
     ApplicationDescriptor getDescriptor() {
         return descriptor;
+    }
+
+    /**
+     * Sets a new classloader.
+     * Package-private for use by ApplicationReloader during hot reload.
+     *
+     * @param classLoader the new classloader
+     */
+    void setClassLoader(ClassLoader classLoader) {
+        this.classLoader = classLoader;
+    }
+
+    /**
+     * Sets a new descriptor.
+     * Package-private for use by ApplicationReloader during hot reload.
+     *
+     * @param descriptor the new descriptor
+     */
+    void setDescriptor(ApplicationDescriptor descriptor) {
+        this.descriptor = descriptor;
     }
 
     /**
