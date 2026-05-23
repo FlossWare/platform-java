@@ -13,7 +13,9 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * REST API server implementation using JDK's built-in {@code com.sun.net.httpserver.HttpServer}.
@@ -73,6 +75,7 @@ public class JdkHttpApiServer implements PlatformApiServer {
     private final ApiServerConfig config;
     private final ApplicationManager manager;
     private HttpServer server;
+    private ExecutorService executor;
     private volatile boolean running;
 
     /**
@@ -123,7 +126,8 @@ public class JdkHttpApiServer implements PlatformApiServer {
             }
 
             // Configure executor for handling requests
-            server.setExecutor(Executors.newFixedThreadPool(10));
+            executor = Executors.newFixedThreadPool(10);
+            server.setExecutor(executor);
 
             // Start the server
             server.start();
@@ -159,6 +163,22 @@ public class JdkHttpApiServer implements PlatformApiServer {
         try {
             // Stop with 5 second delay for graceful shutdown
             server.stop(5);
+
+            // Shutdown executor
+            if (executor != null) {
+                executor.shutdown();
+                try {
+                    if (!executor.awaitTermination(10, TimeUnit.SECONDS)) {
+                        logger.warn("Executor did not terminate in time, forcing shutdown");
+                        executor.shutdownNow();
+                    }
+                } catch (InterruptedException e) {
+                    logger.warn("Interrupted while waiting for executor shutdown, forcing shutdown");
+                    executor.shutdownNow();
+                    Thread.currentThread().interrupt();
+                }
+            }
+
             running = false;
 
             logger.info("HTTP API server stopped successfully");

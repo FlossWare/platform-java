@@ -118,6 +118,7 @@ public class ApplicationManager {
                 ResourceEnforcer enforcer = new ResourceEnforcer(
                         appId,
                         resourceConfig,
+                        threadGroup,  // for throttling
                         id -> {
                             try {
                                 stop(id);
@@ -150,14 +151,12 @@ public class ApplicationManager {
                     NativeLibraryLoader nativeLoader = new NativeLibraryLoader(appId);
                     java.nio.file.Path libDir = nativeLoader.loadLibraries(descriptor.getNativeLibraries());
 
-                    // Add to java.library.path
-                    String existingPath = System.getProperty("java.library.path", "");
-                    String newPath = existingPath.isEmpty() ?
-                            libDir.toString() :
-                            existingPath + System.getProperty("path.separator") + libDir.toString();
-                    System.setProperty("java.library.path", newPath);
+                    // Note: We do NOT modify global java.library.path as that breaks isolation
+                    // and doesn't work after JVM startup (ClassLoader caches the path).
+                    // Applications must use System.load(absolutePath) to load these libraries.
+                    // The library directory path is: libDir.toString()
 
-                    logger.info("[{}] Loaded {} native libraries from {}",
+                    logger.info("[{}] Loaded {} native libraries to {}",
                             appId, descriptor.getNativeLibraries().size(), libDir);
                 } catch (Exception e) {
                     logger.error("[{}] Failed to load native libraries", appId, e);

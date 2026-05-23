@@ -89,7 +89,11 @@ public class IsolatedClassLoader extends ClassLoader implements AutoCloseable {
      */
     @Override
     protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
-        return delegate.loadClass(name);
+        Class<?> clazz = delegate.loadClass(name);
+        if (resolve) {
+            resolveClass(clazz);
+        }
+        return clazz;
     }
 
     /**
@@ -210,8 +214,11 @@ public class IsolatedClassLoader extends ClassLoader implements AutoCloseable {
         // Close all tracked resources
         resourceTracker.closeAllResources();
 
-        // Suggest GC to reclaim class memory
-        System.gc();
+        // Optionally suggest GC to reclaim class memory (disabled by default)
+        // Enable with -Djplatform.debug.forceGcOnClose=true
+        if (Boolean.getBoolean("jplatform.debug.forceGcOnClose")) {
+            System.gc();
+        }
     }
 
     /**

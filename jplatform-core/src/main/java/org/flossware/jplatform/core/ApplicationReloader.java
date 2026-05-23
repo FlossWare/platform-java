@@ -80,11 +80,13 @@ public class ApplicationReloader {
         }
 
         boolean wasRunning = state == ApplicationState.RUNNING;
+        IsolatedClassLoader newClassLoader = null;
+        int newVersion = 0;
 
         try {
             // Step 1: Create new classloader with updated code
-            int newVersion = incrementVersion(applicationId);
-            IsolatedClassLoader newClassLoader = IsolatedClassLoader.create(
+            newVersion = incrementVersion(applicationId);
+            newClassLoader = IsolatedClassLoader.create(
                     applicationId,
                     newDescriptor,
                     platformSharedLoader
@@ -118,10 +120,9 @@ public class ApplicationReloader {
                 }
             }
 
-            // Step 4: Swap classloader atomically
+            // Step 4: Swap classloader and descriptor atomically
             ClassLoader oldClassLoader = currentContext.getClassLoader();
-            currentContext.setClassLoader(newClassLoader);
-            currentContext.setDescriptor(newDescriptor);
+            currentContext.setClassLoaderAndDescriptor(newClassLoader, newDescriptor);
 
             logger.info("[{}] Swapped classloader from old to version {}", applicationId, newVersion);
 
@@ -166,6 +167,17 @@ public class ApplicationReloader {
 
         } catch (Exception e) {
             logger.error("[{}] Hot reload failed", applicationId, e);
+
+            // Cleanup new classloader on failure to prevent resource leak
+            if (newClassLoader != null) {
+                try {
+                    newClassLoader.close();
+                    logger.info("[{}] Closed failed classloader version {}", applicationId, newVersion);
+                } catch (Exception closeEx) {
+                    logger.warn("[{}] Failed to close classloader during rollback", applicationId, closeEx);
+                }
+            }
+
             throw new Exception("Hot reload failed for " + applicationId, e);
         } finally {
             Thread.currentThread().setContextClassLoader(platformSharedLoader);

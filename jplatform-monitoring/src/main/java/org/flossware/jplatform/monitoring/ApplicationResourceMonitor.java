@@ -12,21 +12,27 @@ import java.util.concurrent.*;
 
 /**
  * Resource monitor for an application.
- * Tracks CPU time, thread count, and memory usage.
+ * Tracks CPU time and thread count. Heap usage tracking is not supported without JVMTI instrumentation.
  * <p>
  * This implementation automatically polls resource metrics every 5 seconds,
  * maintaining a rolling history of snapshots for the last hour. It supports
  * quota enforcement and event notifications when quotas are exceeded.
+ * <p>
+ * <strong>Limitations:</strong>
+ * <ul>
+ *   <li>Heap usage is reported as -1 (not available) - accurate per-application heap tracking
+ *       requires JVMTI instrumentation which is not currently implemented</li>
+ *   <li>Disk I/O metrics are reported as 0 (not available)</li>
+ * </ul>
  * <p>
  * Example usage:
  * {@code
  * ThreadGroup threadGroup = new ThreadGroup("my-app");
  * ApplicationResourceMonitor monitor = new ApplicationResourceMonitor("my-app", threadGroup);
  *
- * // Set resource quota
+ * // Set resource quota (note: heap quotas cannot be enforced without heap tracking)
  * ResourceQuota quota = ResourceQuota.builder()
  *     .maxCpuTimeSeconds(60)
- *     .maxHeapBytes(100 * 1024 * 1024) // 100MB
  *     .maxThreads(20)
  *     .build();
  * monitor.setQuota(quota);
@@ -39,6 +45,8 @@ import java.util.concurrent.*;
  * // Get current snapshot
  * ResourceSnapshot snapshot = monitor.getCurrentSnapshot();
  * System.out.println("CPU time: " + snapshot.getCpuTimeNanos());
+ * System.out.println("Thread count: " + snapshot.getThreadCount());
+ * System.out.println("Heap usage: " + snapshot.getHeapUsedBytes() + " (-1 = not available)");
  *
  * // Get history
  * ResourceUsageHistory history = monitor.getHistory(Duration.ofMinutes(10));
@@ -147,17 +155,28 @@ public class ApplicationResourceMonitor implements ResourceMonitor {
     }
 
     private Thread[] getApplicationThreads() {
-        int estimatedSize = applicationThreadGroup.activeCount() * 2;
-        Thread[] threads = new Thread[estimatedSize];
-        int count = applicationThreadGroup.enumerate(threads, true);
+        Thread[] threads = new Thread[applicationThreadGroup.activeCount() * 2];
+        int count;
+
+        // Retry with larger array if needed (count == length means array was full, some threads missed)
+        while ((count = applicationThreadGroup.enumerate(threads, true)) == threads.length) {
+            threads = new Thread[threads.length * 2];
+        }
+
         return Arrays.copyOf(threads, count);
     }
 
     private long estimateHeapUsage() {
-        // This is a rough approximation
-        // For accurate measurement, would need JVMTI agent
-        Runtime runtime = Runtime.getRuntime();
-        return runtime.totalMemory() - runtime.freeMemory();
+        // Per-application heap tracking is not supported without JVMTI instrumentation.
+        // Returning the total JVM heap (as previous implementation did) gives false data
+        // that attributes all heap usage to every application, making quota enforcement
+        // and monitoring meaningless in multi-application scenarios.
+        //
+        // Future enhancement: Provide optional JVMTI agent for accurate per-application
+        // heap tracking, or use Java Flight Recorder APIs for approximation.
+        //
+        // For now, return -1 to indicate "not available"
+        return -1;
     }
 
     /**

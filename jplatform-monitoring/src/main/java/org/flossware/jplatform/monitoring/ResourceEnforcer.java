@@ -45,6 +45,7 @@ public class ResourceEnforcer {
     private final String applicationId;
     private final ResourceConfig config;
     private final EnforcementPolicy policy;
+    private final ThreadGroup threadGroup;
 
     // Actions provided by ApplicationManager
     private final Consumer<String> shutdownAction;
@@ -56,14 +57,16 @@ public class ResourceEnforcer {
      *
      * @param applicationId the application identifier
      * @param config the resource configuration with enforcement actions
+     * @param threadGroup the application's thread group (for throttling)
      * @param shutdownAction callback to gracefully stop the application
      * @param killAction callback to forcefully terminate the application
      */
     public ResourceEnforcer(String applicationId,
                             ResourceConfig config,
+                            ThreadGroup threadGroup,
                             Consumer<String> shutdownAction,
                             Consumer<String> killAction) {
-        this(applicationId, config, shutdownAction, killAction, null);
+        this(applicationId, config, threadGroup, shutdownAction, killAction, null);
     }
 
     /**
@@ -71,17 +74,20 @@ public class ResourceEnforcer {
      *
      * @param applicationId the application identifier
      * @param config the resource configuration with enforcement actions
+     * @param threadGroup the application's thread group (for throttling)
      * @param shutdownAction callback to gracefully stop the application
      * @param killAction callback to forcefully terminate the application
      * @param throttleAction callback to throttle thread group execution
      */
     public ResourceEnforcer(String applicationId,
                             ResourceConfig config,
+                            ThreadGroup threadGroup,
                             Consumer<String> shutdownAction,
                             Consumer<String> killAction,
                             Consumer<ThreadGroup> throttleAction) {
         this.applicationId = applicationId;
         this.config = config;
+        this.threadGroup = threadGroup;
         this.shutdownAction = shutdownAction;
         this.killAction = killAction;
         this.throttleAction = throttleAction;
@@ -206,12 +212,13 @@ public class ResourceEnforcer {
                     break;
 
                 case THROTTLE:
-                    if (throttleAction != null) {
+                    if (throttleAction != null && threadGroup != null) {
                         logger.info("Throttling application {}", applicationId);
-                        // Throttle action receives ThreadGroup to slow down
-                        // Implementation in ApplicationResourceMonitor
+                        throttleAction.accept(threadGroup);
                     } else {
-                        logger.warn("Throttle action requested but not configured for {}", applicationId);
+                        logger.warn("Throttle action requested but not configured for {} " +
+                                "(throttleAction={}, threadGroup={})",
+                                applicationId, throttleAction != null, threadGroup != null);
                     }
                     break;
 

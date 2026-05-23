@@ -213,15 +213,16 @@ public class NativeLibraryLoader {
         Path libDir = basePath.resolve(applicationId);
 
         if (Files.exists(libDir)) {
-            Files.walk(libDir)
-                    .sorted((a, b) -> b.compareTo(a))  // Delete files before directories
-                    .forEach(path -> {
-                        try {
-                            Files.delete(path);
-                        } catch (IOException e) {
-                            logger.warn("[{}] Failed to delete: {}", applicationId, path, e);
-                        }
-                    });
+            try (var walk = Files.walk(libDir)) {
+                walk.sorted((a, b) -> b.compareTo(a))  // Delete files before directories
+                        .forEach(path -> {
+                            try {
+                                Files.delete(path);
+                            } catch (IOException e) {
+                                logger.warn("[{}] Failed to delete: {}", applicationId, path, e);
+                            }
+                        });
+            }
 
             logger.info("[{}] Cleaned up native libraries", applicationId);
         }

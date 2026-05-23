@@ -146,6 +146,18 @@ public class ApplicationContextImpl implements ApplicationContext {
     }
 
     /**
+     * Atomically updates both classloader and descriptor.
+     * Package-private for use by ApplicationReloader during hot reload to avoid race conditions.
+     *
+     * @param classLoader the new classloader
+     * @param descriptor the new descriptor
+     */
+    synchronized void setClassLoaderAndDescriptor(ClassLoader classLoader, ApplicationDescriptor descriptor) {
+        this.classLoader = classLoader;
+        this.descriptor = descriptor;
+    }
+
+    /**
      * Creates a new builder for constructing application contexts.
      *
      * @return a new builder instance

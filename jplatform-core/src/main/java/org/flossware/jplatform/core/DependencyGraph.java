@@ -63,6 +63,33 @@ class DependencyGraph {
     }
 
     /**
+     * Removes a node and all edges to/from it from the graph.
+     *
+     * @param applicationId the application identifier to remove
+     */
+    public void removeNode(String applicationId) {
+        if (!adjacencyList.containsKey(applicationId)) {
+            return;  // Node doesn't exist
+        }
+
+        // Remove all edges from this node to its dependencies
+        Set<String> dependencies = adjacencyList.get(applicationId);
+        for (String dependency : dependencies) {
+            reversedList.get(dependency).remove(applicationId);
+        }
+
+        // Remove all edges from dependents to this node
+        Set<String> dependents = reversedList.get(applicationId);
+        for (String dependent : dependents) {
+            adjacencyList.get(dependent).remove(applicationId);
+        }
+
+        // Remove the node itself
+        adjacencyList.remove(applicationId);
+        reversedList.remove(applicationId);
+    }
+
+    /**
      * Returns the applications that depend on the given application.
      *
      * @param applicationId the application identifier
@@ -207,6 +234,14 @@ class DependencyGraph {
                     queue.offer(neighbor);
                 }
             }
+        }
+
+        // Defensive check: all nodes should be in result
+        if (result.size() != adjacencyList.size()) {
+            throw new IllegalStateException(
+                    "Topological sort incomplete: " + result.size() + " of " +
+                    adjacencyList.size() + " nodes processed. This indicates a cycle that was not detected."
+            );
         }
 
         return result;

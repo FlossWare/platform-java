@@ -7,6 +7,8 @@ import org.flossware.jplatform.api.Subscription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.*;
@@ -51,6 +53,7 @@ import java.util.concurrent.*;
 public class InMemoryMessageBus implements MessageBus {
 
     private static final Logger logger = LoggerFactory.getLogger(InMemoryMessageBus.class);
+    private static final List<SubscriptionImpl> EMPTY_SUBSCRIBERS = Collections.emptyList();
 
     private final Map<String, CopyOnWriteArrayList<SubscriptionImpl>> subscribers;
     private final ExecutorService dispatchExecutor;
@@ -84,10 +87,9 @@ public class InMemoryMessageBus implements MessageBus {
      */
     @Override
     public void publish(String topic, Message message) {
-        CopyOnWriteArrayList<SubscriptionImpl> topicSubscribers =
-                subscribers.getOrDefault(topic, new CopyOnWriteArrayList<>());
+        List<SubscriptionImpl> topicSubscribers = subscribers.get(topic);
 
-        if (topicSubscribers.isEmpty()) {
+        if (topicSubscribers == null || topicSubscribers.isEmpty()) {
             logger.debug("No subscribers for topic: {}", topic);
             return;
         }
