@@ -18,6 +18,9 @@ import java.util.concurrent.*;
  * maintaining a rolling history of snapshots for the last hour. It supports
  * quota enforcement and event notifications when quotas are exceeded.
  * <p>
+ * <b>Thread Safety:</b> This class is thread-safe. Uses CopyOnWriteArrayList for history
+ * and listeners, volatile fields for quota and enforcer references.
+ * <p>
  * <strong>Limitations:</strong>
  * <ul>
  *   <li>Heap usage is reported as -1 (not available) - accurate per-application heap tracking

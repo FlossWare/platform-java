@@ -9,6 +9,10 @@ import java.util.Optional;
 /**
  * Implementation of ApplicationContext.
  * Provides isolated runtime environment for an application.
+ * <p>
+ * <b>Thread Safety:</b> This class is thread-safe. Uses volatile fields for swappable state
+ * (descriptor, state, classLoader, applicationInstance). The setClassLoaderAndDescriptor()
+ * method is synchronized for atomic updates during hot reload.
  */
 public class ApplicationContextImpl implements ApplicationContext {
 

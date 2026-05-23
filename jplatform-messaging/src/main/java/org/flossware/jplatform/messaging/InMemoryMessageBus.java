@@ -22,6 +22,9 @@ import java.util.concurrent.*;
  * from topics they're interested in. Message delivery is asynchronous and uses
  * a fixed thread pool to dispatch messages to handlers.
  * <p>
+ * <b>Thread Safety:</b> This class is thread-safe. Uses ConcurrentHashMap for subscribers
+ * map and CopyOnWriteArrayList for subscriber lists. All operations are thread-safe.
+ * <p>
  * Example usage:
  * {@code
  * InMemoryMessageBus messageBus = new InMemoryMessageBus();

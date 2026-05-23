@@ -17,11 +17,16 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Core platform component that manages application lifecycle.
  * Handles deployment, starting, stopping, and undeployment of applications.
+ * <p>
+ * <b>Thread Safety:</b> This class is thread-safe. All public methods are synchronized
+ * on the instance, making all operations thread-safe but serialized (performance bottleneck -
+ * see GitHub issue #37). The {@code applications} map is guarded by {@code this} lock.
  */
 public class ApplicationManager {
 
     private static final Logger logger = LoggerFactory.getLogger(ApplicationManager.class);
 
+    // Guarded by 'this' - all access synchronized
     private final Map<String, ApplicationContextImpl> applications;
     private final ClassLoader platformSharedLoader;
     private final MessageBus sharedMessageBus;
