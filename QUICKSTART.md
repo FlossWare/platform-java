@@ -162,6 +162,37 @@ The Swing UI provides:
 
 **Note**: Swing UI requires a display environment (X11, Wayland, Windows, macOS). It cannot run in headless CI/CD environments.
 
+## Use Terminal UI (Curses-like)
+
+For a full-screen terminal interface perfect for SSH sessions:
+
+```bash
+java -cp jplatform-jcurses-ui-1.1.jar:jplatform-api-1.1.jar:jplatform-core-1.1.jar:lanterna-3.1.1.jar \
+    org.flossware.jplatform.jcurses.TerminalConsole
+
+# Or integrated with launcher:
+java -jar jplatform-launcher-1.1.jar --terminal-ui
+```
+
+The Terminal UI provides:
+- Full-screen terminal interface (like htop or vim)
+- Keyboard-driven navigation (arrow keys or vi-style j/k)
+- Color-coded application states
+- Real-time metrics updates
+- Start/stop/undeploy operations
+- Auto-refresh every 2 seconds
+- Works over SSH sessions
+
+**Keyboard Controls:**
+- `↑`/`↓` or `j`/`k` - Navigate applications
+- `s` - Start selected application
+- `t` - Stop selected application  
+- `u` - Undeploy selected application
+- `r` - Refresh display
+- `q` - Quit
+
+**Note**: Terminal UI requires a TTY (interactive terminal). It cannot run in cron jobs, systemd services, or CI/CD pipelines.
+
 ## Enable Metrics Monitoring
 
 ### JMX Metrics (JConsole, VisualVM)

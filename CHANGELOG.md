@@ -34,6 +34,16 @@ and this project adheres to X.Y semantic versioning.
   - Auto-refresh every 2 seconds
   - Input validation for application ID and main class
   - Native look and feel for the operating system
+- Terminal UI (jplatform-jcurses-ui module)
+  - Full-screen terminal interface using Lanterna (modern curses-like library)
+  - Keyboard-driven navigation (arrow keys and vi-style j/k)
+  - Color-coded application states (green=running, yellow=stopped, red=failed)
+  - Real-time metrics updates (CPU time, heap, threads)
+  - Lifecycle controls: Start, Stop, Undeploy
+  - Auto-refresh every 2 seconds
+  - Status bar with operation feedback and help text
+  - Perfect for SSH sessions and headless server management
+  - Pure Java (no native dependencies)
 
 ### Fixed
 - ThreadPoolConfig.Builder missing parameter validation (issue #44)
@@ -53,19 +63,24 @@ and this project adheres to X.Y semantic versioning.
 - Added tests for DependencyResolver, ApplicationReloader, NativeLibraryLoader, ClassLoaderVersion
 - Added tests for NativeProcessLauncher and ContainerLauncher
 - Added tests for jplatform-swing-ui module (SwingConsoleTest, DeployDialogTest)
-- Test coverage at 39% instruction coverage (72 tests across 11 test classes)
+- Added tests for jplatform-jcurses-ui module (TerminalConsoleTest)
+- Test coverage at 39% instruction coverage (74 tests across 12 test classes)
 - Focus on API contracts and configuration validation
 - Integration tests require actual executables/containers
 - Swing UI tests limited to API validation due to headless environment constraints
+- Terminal UI tests limited to API validation due to TTY requirements
 
 ### Documentation
 - NATIVE_EXECUTION.md - Complete guide to native process deployment (GraalVM, Rust, Go, C++)
 - CONTAINER_DEPLOYMENT.md - Complete guide to container orchestration (Docker/Podman/LXC)
 - jplatform-core/README.md - Module documentation with all components and deployment modes
-- jplatform-swing-ui/README.md - Module documentation for Swing desktop UI
-- Updated README.md with Swing UI in management interfaces and deployment mechanisms
-- Updated QUICKSTART.md with Swing UI launch instructions
-- All classes have complete Javadoc (NativeProcessLauncher, ContainerLauncher, SwingConsole, DeployDialog)
+- jplatform-rest-api/README.md - Complete REST API reference with all endpoints
+- jplatform-web-console/README.md - Browser-based UI documentation
+- jplatform-swing-ui/README.md - Desktop UI documentation
+- jplatform-jcurses-ui/README.md - Terminal UI documentation with keyboard controls
+- Updated README.md with all UI modules in management interfaces and deployment mechanisms
+- Updated QUICKSTART.md with all UI launch instructions (Web, Swing, Terminal)
+- All classes have complete Javadoc (NativeProcessLauncher, ContainerLauncher, SwingConsole, DeployDialog, TerminalConsole)
 
 ### Changed
 - CI/CD pipeline now active with automated version bumping and artifact publishing

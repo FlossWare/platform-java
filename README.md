@@ -22,6 +22,7 @@ Think of it as running multiple Java applications in separate terminal windows, 
 - **REST API**: HTTP endpoints for deployment and management ✅ **IMPLEMENTED**
 - **Web Console**: Browser-based management UI with real-time metrics ✅ **IMPLEMENTED**
 - **Swing Desktop UI**: Native desktop application with file chooser and graphical controls ✅ **NEW**
+- **Terminal UI**: Full-screen curses-like interface for SSH/remote management ✅ **NEW**
 - **Programmatic API**: Java API for runtime deployment/undeployment ✅ **IMPLEMENTED**
 - **CLI**: Command-line interface for management operations ✅ **IMPLEMENTED**
 
@@ -34,6 +35,7 @@ Think of it as running multiple Java applications in separate terminal windows, 
 - **REST API**: Full HTTP API for deployment, lifecycle management, and metrics retrieval
 - **Web Console**: Modern browser-based UI with real-time charts (Chart.js)
 - **Swing Desktop UI**: Native desktop application for JPlatform management with real-time metrics ✅ **NEW**
+- **Terminal UI**: Full-screen terminal interface with keyboard controls (curses-like) ✅ **NEW**
 - **JMX Metrics**: Expose application metrics via JMX MBeans for tools like JConsole, VisualVM
 - **Prometheus Metrics**: Export metrics in Prometheus format for modern monitoring stacks
 - **Filesystem Watcher**: Automatic deployment when descriptor files are added/modified
@@ -123,6 +125,7 @@ jplatform/
 ├── jplatform-rest-api/         # HTTP REST API server ✅ **COMPLETE**
 ├── jplatform-web-console/      # Browser-based management UI ✅ **COMPLETE**
 ├── jplatform-swing-ui/         # Swing desktop management UI ✅ **NEW**
+├── jplatform-jcurses-ui/       # Terminal UI (curses-like) ✅ **NEW**
 ├── jplatform-metrics-jmx/      # JMX metrics exporter ✅ **COMPLETE**
 ├── jplatform-metrics-prometheus/ # Prometheus metrics exporter ✅ **COMPLETE**
 ├── jplatform-storage/          # Persistent volume management ✅ **COMPLETE (2.0)**
@@ -576,6 +579,7 @@ Applications SHOULD use the provided `ManagedThreadPool`. Direct thread creation
 - REST API server (`jplatform-rest-api`) - full HTTP API
 - Web console (`jplatform-web-console`) - modern browser-based UI
 - Swing desktop UI (`jplatform-swing-ui`) - native desktop management interface ✅ **NEW in 1.1**
+- Terminal UI (`jplatform-jcurses-ui`) - full-screen curses-like terminal interface ✅ **NEW in 1.1**
 
 **Metrics & Monitoring (NEW in 1.0):**
 - JMX metrics exporter (`jplatform-metrics-jmx`) - JConsole/VisualVM integration
