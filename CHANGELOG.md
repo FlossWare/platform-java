@@ -26,6 +26,14 @@ and this project adheres to X.Y semantic versioning.
   - Port mappings, volume mounts, environment variables, network configuration
   - Container output redirection to platform logging
   - Configuration via properties: container.runtime, container.image, container.ports, container.volumes
+- Swing Desktop UI (jplatform-swing-ui module)
+  - Native desktop management interface using Java Swing
+  - Application deployment via file chooser dialog
+  - Lifecycle controls: Deploy, Start, Stop, Undeploy
+  - Real-time metrics table (CPU time, heap usage, thread count)
+  - Auto-refresh every 2 seconds
+  - Input validation for application ID and main class
+  - Native look and feel for the operating system
 
 ### Fixed
 - ThreadPoolConfig.Builder missing parameter validation (issue #44)
@@ -44,16 +52,20 @@ and this project adheres to X.Y semantic versioning.
 - Created ApplicationManagerConcurrencyTest to verify fine-grained locking
 - Added tests for DependencyResolver, ApplicationReloader, NativeLibraryLoader, ClassLoaderVersion
 - Added tests for NativeProcessLauncher and ContainerLauncher
-- Test coverage at 39% instruction coverage (70 tests across 9 test classes)
+- Added tests for jplatform-swing-ui module (SwingConsoleTest, DeployDialogTest)
+- Test coverage at 39% instruction coverage (72 tests across 11 test classes)
 - Focus on API contracts and configuration validation
 - Integration tests require actual executables/containers
+- Swing UI tests limited to API validation due to headless environment constraints
 
 ### Documentation
 - NATIVE_EXECUTION.md - Complete guide to native process deployment (GraalVM, Rust, Go, C++)
 - CONTAINER_DEPLOYMENT.md - Complete guide to container orchestration (Docker/Podman/LXC)
 - jplatform-core/README.md - Module documentation with all components and deployment modes
-- Updated README.md with native execution and container orchestration features
-- All classes have complete Javadoc (NativeProcessLauncher, ContainerLauncher)
+- jplatform-swing-ui/README.md - Module documentation for Swing desktop UI
+- Updated README.md with Swing UI in management interfaces and deployment mechanisms
+- Updated QUICKSTART.md with Swing UI launch instructions
+- All classes have complete Javadoc (NativeProcessLauncher, ContainerLauncher, SwingConsole, DeployDialog)
 
 ### Changed
 - CI/CD pipeline now active with automated version bumping and artifact publishing

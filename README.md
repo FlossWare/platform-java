@@ -21,6 +21,7 @@ Think of it as running multiple Java applications in separate terminal windows, 
 - **Configuration Files**: Define applications in YAML or JSON format ✅ **IMPLEMENTED**  
 - **REST API**: HTTP endpoints for deployment and management ✅ **IMPLEMENTED**
 - **Web Console**: Browser-based management UI with real-time metrics ✅ **IMPLEMENTED**
+- **Swing Desktop UI**: Native desktop application with file chooser and graphical controls ✅ **NEW**
 - **Programmatic API**: Java API for runtime deployment/undeployment ✅ **IMPLEMENTED**
 - **CLI**: Command-line interface for management operations ✅ **IMPLEMENTED**
 
@@ -32,6 +33,7 @@ Think of it as running multiple Java applications in separate terminal windows, 
 ### Management and Monitoring ✅ **ALL IMPLEMENTED**
 - **REST API**: Full HTTP API for deployment, lifecycle management, and metrics retrieval
 - **Web Console**: Modern browser-based UI with real-time charts (Chart.js)
+- **Swing Desktop UI**: Native desktop application for JPlatform management with real-time metrics ✅ **NEW**
 - **JMX Metrics**: Expose application metrics via JMX MBeans for tools like JConsole, VisualVM
 - **Prometheus Metrics**: Export metrics in Prometheus format for modern monitoring stacks
 - **Filesystem Watcher**: Automatic deployment when descriptor files are added/modified

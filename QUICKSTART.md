@@ -141,6 +141,27 @@ The web console provides:
 - Real-time metrics charts (CPU, memory, threads)
 - Application properties viewer
 
+## Use Swing Desktop UI
+
+For a native desktop management interface:
+
+```bash
+java -cp jplatform-swing-ui-1.1.jar:jplatform-api-1.1.jar:jplatform-core-1.1.jar \
+    org.flossware.jplatform.swing.SwingConsole
+
+# Or if using the executable JAR:
+java -jar jplatform-swing-ui-1.1.jar
+```
+
+The Swing UI provides:
+- Application deployment via native file chooser
+- Start/stop/undeploy buttons
+- Real-time metrics table (CPU time, heap, threads)
+- Auto-refresh every 2 seconds
+- Native look and feel for your operating system
+
+**Note**: Swing UI requires a display environment (X11, Wayland, Windows, macOS). It cannot run in headless CI/CD environments.
+
 ## Enable Metrics Monitoring
 
 ### JMX Metrics (JConsole, VisualVM)

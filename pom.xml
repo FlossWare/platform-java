@@ -57,6 +57,7 @@
         <!-- New management modules -->
         <module>jplatform-rest-api</module>
         <module>jplatform-web-console</module>
+        <module>jplatform-swing-ui</module>
 
         <!-- New metrics modules -->
         <module>jplatform-metrics-jmx</module>
