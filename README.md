@@ -99,6 +99,7 @@ jplatform/
 ├── jplatform-security/         # Security policy enforcement
 ├── jplatform-monitoring/       # Resource monitoring and quotas
 ├── jplatform-messaging/        # Optional event bus and service registry
+├── jplatform-messaging-jms/    # JMS-backed MessageBus for distributed messaging ✅ **NEW**
 ├── jplatform-config/           # YAML/JSON descriptor parsing ✅ **COMPLETE**
 ├── jplatform-fs-watcher/       # Filesystem monitoring for auto-deployment ✅ **COMPLETE**
 ├── jplatform-rest-api/         # HTTP REST API server ✅ **COMPLETE**
@@ -532,6 +533,7 @@ Applications SHOULD use the provided `ManagedThreadPool`. Direct thread creation
 - Resource monitoring (`jplatform-monitoring`) - CPU, heap, thread tracking with quotas
 - Security policy enforcement (`jplatform-security`) - configurable permissions
 - Messaging (`jplatform-messaging`) - InMemoryMessageBus and ServiceRegistry
+- JMS Messaging (`jplatform-messaging-jms`) - JMS-backed MessageBus for multi-node messaging
 - Platform launcher (`jplatform-launcher`) - enhanced interactive console
 - Sample applications - hello-world and messaging-app
 

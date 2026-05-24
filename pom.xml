@@ -31,6 +31,7 @@
         <module>jplatform-security</module>
         <module>jplatform-monitoring</module>
         <module>jplatform-messaging</module>
+        <module>jplatform-messaging-jms</module>
         <module>jplatform-storage</module>
 
         <!-- New deployment modules -->
@@ -91,6 +92,11 @@
             <dependency>
                 <groupId>org.flossware.jplatform</groupId>
                 <artifactId>jplatform-messaging</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.flossware.jplatform</groupId>
+                <artifactId>jplatform-messaging-jms</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
