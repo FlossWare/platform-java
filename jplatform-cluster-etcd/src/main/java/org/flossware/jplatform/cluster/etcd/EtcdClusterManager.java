@@ -81,7 +81,8 @@ public class EtcdClusterManager implements ClusterManager {
 
             leaseId = leaseClient.grant(this.config.getLeaseTtl()).get().getID();
             scheduler = Executors.newScheduledThreadPool(1);
-            scheduler.scheduleAtFixedRate(this::keepAlive, 0, this.config.getLeaseTtl() / 2, TimeUnit.SECONDS);
+            long renewalPeriod = Math.max(1, this.config.getLeaseTtl() / 2);
+            scheduler.scheduleAtFixedRate(this::keepAlive, 0, renewalPeriod, TimeUnit.SECONDS);
 
             joined = true;
             tryBecomeLeader();

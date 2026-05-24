@@ -93,8 +93,9 @@ public class RedisClusterManager implements ClusterManager {
 
             // Start leader election attempts
             scheduler = Executors.newScheduledThreadPool(1);
+            long renewalPeriod = Math.max(1, this.config.getLeaseTtl() / 2);
             scheduler.scheduleAtFixedRate(this::tryBecomeLeader, 0,
-                this.config.getLeaseTtl() / 2, TimeUnit.SECONDS);
+                renewalPeriod, TimeUnit.SECONDS);
 
             joined = true;
         } catch (Exception e) {
