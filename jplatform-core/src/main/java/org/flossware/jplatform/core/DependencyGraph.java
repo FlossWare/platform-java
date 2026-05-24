@@ -173,13 +173,26 @@ class DependencyGraph {
      * @param end the node that created the cycle edge
      * @param parent parent mapping from DFS
      * @return list of nodes in the cycle
+     * @throws IllegalStateException if parent chain is broken or cycle reconstruction loops excessively
      */
     private List<String> reconstructCycle(String start, String end, Map<String, String> parent) {
         List<String> cycle = new ArrayList<>();
         cycle.add(start);
 
         String current = end;
+        int maxIterations = parent.size() + 1;  // Cycle can't be longer than graph
+        int iterations = 0;
+
         while (!current.equals(start)) {
+            if (current == null) {
+                throw new IllegalStateException(
+                    "Broken parent chain while reconstructing cycle from " + end + " to " + start);
+            }
+            if (++iterations > maxIterations) {
+                throw new IllegalStateException(
+                    "Cycle reconstruction exceeded maximum iterations - possible infinite loop");
+            }
+
             cycle.add(current);
             current = parent.get(current);
         }
