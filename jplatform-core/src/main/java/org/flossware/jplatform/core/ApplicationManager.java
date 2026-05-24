@@ -36,6 +36,7 @@ public class ApplicationManager implements PlatformManager {
     private final ServiceRegistry sharedServiceRegistry;
     private final DependencyResolver dependencyResolver;
     private final ApplicationReloader reloader;
+    private final NativeProcessLauncher nativeProcessLauncher;
 
     /**
      * Creates a new application manager without messaging support.
@@ -58,7 +59,8 @@ public class ApplicationManager implements PlatformManager {
         this.sharedServiceRegistry = serviceRegistry;
         this.dependencyResolver = new DependencyResolver(serviceRegistry);
         this.reloader = new ApplicationReloader(platformSharedLoader);
-        logger.info("ApplicationManager initialized with fine-grained locking, dependency resolution and hot reload");
+        this.nativeProcessLauncher = new NativeProcessLauncher();
+        logger.info("ApplicationManager initialized with fine-grained locking, dependency resolution, hot reload, and native process support");
     }
 
     /**
@@ -246,33 +248,52 @@ public class ApplicationManager implements PlatformManager {
             context.setState(ApplicationState.STARTING);
 
             try {
-                // Load main class using application's classloader
-                ClassLoader appClassLoader = context.getClassLoader();
-                Thread.currentThread().setContextClassLoader(appClassLoader);
+                // Check if this is a native image application
+                ApplicationDescriptor descriptor = context.getDescriptor();
+                if (descriptor.isNativeImage()) {
+                    // Launch as native process
+                    logger.info("[{}] Launching as native process", applicationId);
+                    java.nio.file.Path workingDir = java.nio.file.Paths.get(
+                            descriptor.getProperties().getOrDefault("native.workdir", "/var/jplatform/apps/" + applicationId)
+                    );
 
-                String mainClassName = getMainClassName(applicationId);
-                Class<?> mainClass = Class.forName(mainClassName, true, appClassLoader);
+                    // Create working directory if needed
+                    java.nio.file.Files.createDirectories(workingDir);
 
-                // Instantiate application
-                Object instance = mainClass.getDeclaredConstructor().newInstance();
-                context.setApplicationInstance(instance);
+                    Process process = nativeProcessLauncher.launch(applicationId, descriptor, workingDir);
+                    context.setNativeProcess(process);
 
-                // If implements Application interface, call start()
-                if (instance instanceof Application) {
-                    ((Application) instance).start(context);
+                    context.setState(ApplicationState.RUNNING);
+                    logger.info("[{}] Native process started successfully (PID: {})", applicationId, process.pid());
                 } else {
-                    // Try to invoke main(String[]) method
-                    try {
-                        Method mainMethod = mainClass.getMethod("main", String[].class);
-                        String[] args = new String[0];
-                        mainMethod.invoke(null, (Object) args);
-                    } catch (NoSuchMethodException e) {
-                        logger.warn("[{}] Main class does not implement Application interface and has no main() method", applicationId);
-                    }
-                }
+                    // Load main class using application's classloader
+                    ClassLoader appClassLoader = context.getClassLoader();
+                    Thread.currentThread().setContextClassLoader(appClassLoader);
 
-                context.setState(ApplicationState.RUNNING);
-                logger.info("[{}] Application started successfully", applicationId);
+                    String mainClassName = getMainClassName(applicationId);
+                    Class<?> mainClass = Class.forName(mainClassName, true, appClassLoader);
+
+                    // Instantiate application
+                    Object instance = mainClass.getDeclaredConstructor().newInstance();
+                    context.setApplicationInstance(instance);
+
+                    // If implements Application interface, call start()
+                    if (instance instanceof Application) {
+                        ((Application) instance).start(context);
+                    } else {
+                        // Try to invoke main(String[]) method
+                        try {
+                            Method mainMethod = mainClass.getMethod("main", String[].class);
+                            String[] args = new String[0];
+                            mainMethod.invoke(null, (Object) args);
+                        } catch (NoSuchMethodException e) {
+                            logger.warn("[{}] Main class does not implement Application interface and has no main() method", applicationId);
+                        }
+                    }
+
+                    context.setState(ApplicationState.RUNNING);
+                    logger.info("[{}] Application started successfully", applicationId);
+                }
 
             } catch (Exception e) {
                 ApplicationContextImpl ctx = applications.get(applicationId);
@@ -319,10 +340,20 @@ public class ApplicationManager implements PlatformManager {
             context.setState(ApplicationState.STOPPING);
 
             try {
-                Object instance = context.getApplicationInstance();
+                // Check if this is a native process
+                Optional<Process> nativeProcess = context.getNativeProcess();
+                if (nativeProcess.isPresent()) {
+                    // Stop native process
+                    logger.info("[{}] Stopping native process", applicationId);
+                    nativeProcessLauncher.stop(applicationId, nativeProcess.get(), 10000); // 10 second grace period
+                    context.setNativeProcess(null);
+                } else {
+                    // Stop JVM application
+                    Object instance = context.getApplicationInstance();
 
-                if (instance instanceof Application) {
-                    ((Application) instance).stop();
+                    if (instance instanceof Application) {
+                        ((Application) instance).stop();
+                    }
                 }
 
                 context.setState(ApplicationState.STOPPED);

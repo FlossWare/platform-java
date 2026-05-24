@@ -29,6 +29,7 @@ public class ApplicationContextImpl implements ApplicationContext {
     private final VolumeManager volumeManager;  // Added in 2.0
     private final Map<String, String> properties;
     private volatile Object applicationInstance;
+    private volatile Process nativeProcess;  // Non-null for native image applications
     private final Instant deployedAt;  // Timestamp when application was deployed
 
     private ApplicationContextImpl(Builder builder) {
@@ -125,6 +126,26 @@ public class ApplicationContextImpl implements ApplicationContext {
      */
     void setApplicationInstance(Object instance) {
         this.applicationInstance = instance;
+    }
+
+    /**
+     * Returns the native process for native image applications.
+     * Package-private for use by ApplicationManager.
+     *
+     * @return Optional containing the native process, or empty if this is a JVM application
+     */
+    Optional<Process> getNativeProcess() {
+        return Optional.ofNullable(nativeProcess);
+    }
+
+    /**
+     * Sets the native process for native image applications.
+     * Package-private for use by ApplicationManager.
+     *
+     * @param process the native process
+     */
+    void setNativeProcess(Process process) {
+        this.nativeProcess = process;
     }
 
     /**

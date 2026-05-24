@@ -11,6 +11,13 @@ and this project adheres to X.Y semantic versioning.
 - ThreadPoolConfig.Builder now validates parameters (issue #44)
 - ApplicationContext.getDeployedAt() to track actual deployment timestamp
 - PlatformManager interface for dependency inversion (issue #36)
+- Native application execution support (issue #46)
+  - NativeProcessLauncher for managing native executable processes
+  - ApplicationManager now detects descriptor.isNativeImage() flag and routes to process launcher
+  - ApplicationContextImpl tracks native Process for native image applications
+  - Native process lifecycle management (start, stop with graceful shutdown)
+  - Output redirection from native processes to platform logging
+  - Support for GraalVM native images and other compiled executables
 
 ### Fixed
 - ThreadPoolConfig.Builder missing parameter validation (issue #44)
