@@ -250,24 +250,40 @@ public class JdkHttpApiServer implements PlatformApiServer {
 
     /**
      * Adds CORS headers to the HTTP response.
-     * Uses allowed origins from configuration, or "*" if none specified.
+     * Validates the request Origin header against allowed origins from configuration.
+     * If no origins are configured, allows all origins with "*".
      *
      * @param exchange the HTTP exchange
      */
     private void addCorsHeaders(HttpExchange exchange) {
-        Headers headers = exchange.getResponseHeaders();
+        Headers responseHeaders = exchange.getResponseHeaders();
+        Headers requestHeaders = exchange.getRequestHeaders();
 
         Set<String> allowedOrigins = config.getAllowedOrigins();
         if (!allowedOrigins.isEmpty()) {
-            // Use first allowed origin (in production, should check request Origin header)
-            String origin = allowedOrigins.iterator().next();
-            headers.add("Access-Control-Allow-Origin", origin);
+            // Get the Origin header from the request
+            String requestOrigin = requestHeaders.getFirst("Origin");
+
+            if (requestOrigin != null && allowedOrigins.contains(requestOrigin)) {
+                // Echo back the origin only if it's in the allowed set
+                responseHeaders.add("Access-Control-Allow-Origin", requestOrigin);
+                // Vary header is important for proper caching of CORS responses
+                responseHeaders.add("Vary", "Origin");
+                logger.debug("Accepting CORS request from allowed origin: {}", requestOrigin);
+            } else {
+                // Origin not allowed or not provided - don't add CORS header
+                // Browser will block the response
+                if (requestOrigin != null) {
+                    logger.debug("Rejecting CORS request from disallowed origin: {}", requestOrigin);
+                }
+            }
         } else {
-            headers.add("Access-Control-Allow-Origin", "*");
+            // No restrictions configured - allow all origins
+            responseHeaders.add("Access-Control-Allow-Origin", "*");
         }
 
-        headers.add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-        headers.add("Access-Control-Allow-Headers", "Content-Type, " + config.getApiKeyHeader());
-        headers.add("Access-Control-Max-Age", "3600");
+        responseHeaders.add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+        responseHeaders.add("Access-Control-Allow-Headers", "Content-Type, " + config.getApiKeyHeader());
+        responseHeaders.add("Access-Control-Max-Age", "3600");
     }
 }
