@@ -122,6 +122,7 @@ jplatform/
 ├── jplatform-fs-watcher/       # Filesystem monitoring for auto-deployment ✅ **COMPLETE**
 ├── jplatform-rest-api/         # HTTP REST API server ✅ **COMPLETE**
 ├── jplatform-web-console/      # Browser-based management UI ✅ **COMPLETE**
+├── jplatform-swing-ui/         # Swing desktop management UI ✅ **NEW**
 ├── jplatform-metrics-jmx/      # JMX metrics exporter ✅ **COMPLETE**
 ├── jplatform-metrics-prometheus/ # Prometheus metrics exporter ✅ **COMPLETE**
 ├── jplatform-storage/          # Persistent volume management ✅ **COMPLETE (2.0)**
@@ -574,6 +575,7 @@ Applications SHOULD use the provided `ManagedThreadPool`. Direct thread creation
 - Filesystem watcher (`jplatform-fs-watcher`) - auto-deployment with debouncing
 - REST API server (`jplatform-rest-api`) - full HTTP API
 - Web console (`jplatform-web-console`) - modern browser-based UI
+- Swing desktop UI (`jplatform-swing-ui`) - native desktop management interface ✅ **NEW in 1.1**
 
 **Metrics & Monitoring (NEW in 1.0):**
 - JMX metrics exporter (`jplatform-metrics-jmx`) - JConsole/VisualVM integration
