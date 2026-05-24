@@ -75,8 +75,24 @@ JPlatform provides runtime platform features comparable to Kubernetes/YARN for J
 - Load platform-specific native libraries (.so, .dll, .dylib)
 - Automatic platform detection (Linux x64, Windows x64, macOS ARM64, etc.)
 - Per-application library isolation (no version conflicts)
-- Support for GraalVM native images (future enhancement)
 - [Documentation](NATIVE_BINARIES.md)
+
+#### Native Process Execution ✅ **NEW**
+- Deploy and run GraalVM native images as separate OS processes
+- Launch compiled executables (C, C++, Rust, Go) via the platform
+- Process lifecycle management (start, graceful shutdown, force kill)
+- Output redirection from processes to platform logging
+- Configurable via `nativeImage` flag and `native.*` properties
+- [Documentation](NATIVE_EXECUTION.md)
+
+#### Container Orchestration ✅ **NEW**
+- Deploy applications as Docker, Podman, or LXC containers
+- Automatic image pulling and container lifecycle management
+- Port mappings, volume mounts, environment variables, network configuration
+- Container output streaming to platform logs
+- Multi-runtime support with automatic detection
+- Configurable via `container.*` properties
+- [Documentation](CONTAINER_DEPLOYMENT.md)
 
 #### Enhanced Observability
 - OpenTelemetry integration for metrics export via OTLP protocol
