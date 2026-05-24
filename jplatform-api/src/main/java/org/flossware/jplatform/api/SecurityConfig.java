@@ -4,6 +4,7 @@ import java.io.FilePermission;
 import java.net.SocketPermission;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -141,8 +142,10 @@ public class SecurityConfig {
          *
          * @param permission the file permission to grant
          * @return this builder
+         * @throws NullPointerException if permission is null
          */
         public Builder addFilePermission(FilePermission permission) {
+            Objects.requireNonNull(permission, "File permission cannot be null");
             this.filePermissions.add(permission);
             return this;
         }
@@ -152,8 +155,10 @@ public class SecurityConfig {
          *
          * @param permission the socket permission to grant
          * @return this builder
+         * @throws NullPointerException if permission is null
          */
         public Builder addSocketPermission(SocketPermission permission) {
+            Objects.requireNonNull(permission, "Socket permission cannot be null");
             this.socketPermissions.add(permission);
             return this;
         }
@@ -163,8 +168,10 @@ public class SecurityConfig {
          *
          * @param permission the runtime permission to grant
          * @return this builder
+         * @throws NullPointerException if permission is null
          */
         public Builder addRuntimePermission(RuntimePermission permission) {
+            Objects.requireNonNull(permission, "Runtime permission cannot be null");
             this.runtimePermissions.add(permission);
             return this;
         }

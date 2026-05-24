@@ -9,6 +9,7 @@ import java.io.FilePermission;
 import java.net.SocketPermission;
 import java.security.Permission;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -63,7 +64,9 @@ public class ApplicationSecurityPolicy implements SecurityPolicy {
      * @throws NullPointerException if applicationId or config is null
      */
     public ApplicationSecurityPolicy(String applicationId, SecurityConfig config) {
-        this.applicationId = applicationId;
+        this.applicationId = Objects.requireNonNull(applicationId, "applicationId cannot be null");
+        Objects.requireNonNull(config, "config cannot be null");
+
         this.grantedPermissions = new HashSet<>();
         this.allowReflection = config.isAllowReflection();
         this.allowNativeCode = config.isAllowNativeCode();
@@ -92,6 +95,8 @@ public class ApplicationSecurityPolicy implements SecurityPolicy {
      */
     @Override
     public boolean checkPermission(Permission permission) {
+        Objects.requireNonNull(permission, "permission cannot be null");
+
         // Check if permission is granted
         for (Permission granted : grantedPermissions) {
             if (granted.implies(permission)) {

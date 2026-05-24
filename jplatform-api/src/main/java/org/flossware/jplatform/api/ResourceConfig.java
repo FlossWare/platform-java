@@ -161,8 +161,12 @@ public class ResourceConfig {
          *
          * @param mb the maximum heap size in megabytes
          * @return this builder
+         * @throws IllegalArgumentException if mb is not positive
          */
         public Builder maxHeapMB(long mb) {
+            if (mb <= 0) {
+                throw new IllegalArgumentException("Max heap MB must be positive, got: " + mb);
+            }
             this.maxHeapMB = Optional.of(mb);
             return this;
         }
@@ -172,8 +176,12 @@ public class ResourceConfig {
          *
          * @param threads the maximum thread count
          * @return this builder
+         * @throws IllegalArgumentException if threads is not positive
          */
         public Builder maxThreads(int threads) {
+            if (threads <= 0) {
+                throw new IllegalArgumentException("Max threads must be positive, got: " + threads);
+            }
             this.maxThreads = Optional.of(threads);
             return this;
         }
@@ -183,8 +191,12 @@ public class ResourceConfig {
          *
          * @param seconds the maximum CPU time in seconds
          * @return this builder
+         * @throws IllegalArgumentException if seconds is not positive
          */
         public Builder maxCpuTimeSeconds(long seconds) {
+            if (seconds <= 0) {
+                throw new IllegalArgumentException("Max CPU time seconds must be positive, got: " + seconds);
+            }
             this.maxCpuTimeSeconds = Optional.of(seconds);
             return this;
         }

@@ -63,11 +63,14 @@ public class FileSystemVolumeManager implements VolumeManager {
      * @param volumes list of volume mounts to create
      * @param basePath the base directory for all volumes
      * @throws IOException if unable to create volume directories
+     * @throws NullPointerException if any parameter is null
      */
     public FileSystemVolumeManager(String applicationId, List<VolumeMount> volumes, Path basePath)
             throws IOException {
-        this.applicationId = applicationId;
-        this.basePath = basePath;
+        this.applicationId = Objects.requireNonNull(applicationId, "applicationId cannot be null");
+        this.basePath = Objects.requireNonNull(basePath, "basePath cannot be null");
+        Objects.requireNonNull(volumes, "volumes cannot be null");
+
         this.volumes = new ConcurrentHashMap<>();
         this.volumePaths = new ConcurrentHashMap<>();
 
