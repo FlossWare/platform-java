@@ -64,8 +64,12 @@ public class PrometheusMetricsExporter implements MetricsExporter {
      * Constructs a new Prometheus metrics exporter with the specified configuration.
      *
      * @param config the exporter configuration specifying port and path
+     * @throws IllegalArgumentException if config is null
      */
     public PrometheusMetricsExporter(PrometheusExporterConfig config) {
+        if (config == null) {
+            throw new IllegalArgumentException("PrometheusExporterConfig cannot be null");
+        }
         this.config = config;
         this.applications = new ConcurrentHashMap<>();
         this.running = false;

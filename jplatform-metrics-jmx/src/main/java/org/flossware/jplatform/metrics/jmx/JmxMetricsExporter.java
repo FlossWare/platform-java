@@ -183,8 +183,10 @@ public class JmxMetricsExporter implements MetricsExporter {
 
         try {
             // Create ObjectName with configured domain
+            // Quote applicationId to escape JMX special characters (:=,"*?)
+            String quotedAppId = ObjectName.quote(applicationId);
             String objectNameStr = String.format("%s:type=Application,id=%s",
-                    config.getDomain(), applicationId);
+                    config.getDomain(), quotedAppId);
             ObjectName objectName = new ObjectName(objectNameStr);
 
             // Check if already registered

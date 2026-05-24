@@ -181,8 +181,9 @@ class JmxMetricsExporterTest {
 
         assertEquals(1, exporter.getRegisteredApplicationCount());
 
-        // Verify MBean is registered
-        ObjectName objectName = new ObjectName("org.flossware.jplatform.test:type=Application,id=test-app");
+        // Verify MBean is registered (applicationId is quoted to escape JMX special characters)
+        String quotedAppId = ObjectName.quote("test-app");
+        ObjectName objectName = new ObjectName("org.flossware.jplatform.test:type=Application,id=" + quotedAppId);
         assertTrue(mBeanServer.isRegistered(objectName));
     }
 
@@ -235,8 +236,9 @@ class JmxMetricsExporterTest {
         exporter.registerApplication("test-app", context);
         assertEquals(1, exporter.getRegisteredApplicationCount());
 
-        // MBean should still be registered
-        ObjectName objectName = new ObjectName("org.flossware.jplatform.test:type=Application,id=test-app");
+        // MBean should still be registered (applicationId is quoted to escape JMX special characters)
+        String quotedAppId = ObjectName.quote("test-app");
+        ObjectName objectName = new ObjectName("org.flossware.jplatform.test:type=Application,id=" + quotedAppId);
         assertTrue(mBeanServer.isRegistered(objectName));
     }
 
@@ -352,10 +354,13 @@ class JmxMetricsExporterTest {
 
         assertEquals(2, exporter.getRegisteredApplicationCount());
 
-        // Verify correct MBeans remain
-        ObjectName objectName1 = new ObjectName("org.flossware.jplatform.test:type=Application,id=app1");
-        ObjectName objectName2 = new ObjectName("org.flossware.jplatform.test:type=Application,id=app2");
-        ObjectName objectName3 = new ObjectName("org.flossware.jplatform.test:type=Application,id=app3");
+        // Verify correct MBeans remain (applicationId is quoted to escape JMX special characters)
+        String quotedAppId1 = ObjectName.quote("app1");
+        String quotedAppId2 = ObjectName.quote("app2");
+        String quotedAppId3 = ObjectName.quote("app3");
+        ObjectName objectName1 = new ObjectName("org.flossware.jplatform.test:type=Application,id=" + quotedAppId1);
+        ObjectName objectName2 = new ObjectName("org.flossware.jplatform.test:type=Application,id=" + quotedAppId2);
+        ObjectName objectName3 = new ObjectName("org.flossware.jplatform.test:type=Application,id=" + quotedAppId3);
 
         assertTrue(mBeanServer.isRegistered(objectName1));
         assertFalse(mBeanServer.isRegistered(objectName2));
