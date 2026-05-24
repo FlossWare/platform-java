@@ -167,8 +167,14 @@ public class RedisVolumeManager implements VolumeManager, AutoCloseable {
             Map<String, String> files = jedis.hgetAll(key);
 
             long totalSize = 0;
-            for (String sizeStr : files.values()) {
-                totalSize += Long.parseLong(sizeStr);
+            for (Map.Entry<String, String> entry : files.entrySet()) {
+                String fileName = entry.getKey();
+                String sizeStr = entry.getValue();
+                try {
+                    totalSize += Long.parseLong(sizeStr);
+                } catch (NumberFormatException e) {
+                    logger.warn("Skipping file {} with invalid size value: {}", fileName, sizeStr);
+                }
             }
 
             return totalSize;
@@ -189,7 +195,7 @@ public class RedisVolumeManager implements VolumeManager, AutoCloseable {
         if (mount == null) {
             throw new IllegalArgumentException("Volume not defined: " + volumeName);
         }
-        return mount.getMaxSizeMB() * 1024 * 1024;
+        return ((long) mount.getMaxSizeMB()) * 1024L * 1024L;
     }
 
     @Override
