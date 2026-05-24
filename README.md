@@ -109,11 +109,11 @@ jplatform/
 ├── jplatform-storage/          # Persistent volume management ✅ **COMPLETE (2.0)**
 ├── jplatform-otel/             # OpenTelemetry integration ✅ **COMPLETE (2.0)**
 ├── jplatform-cluster/          # Multi-node clustering (Hazelcast) ✅ **COMPLETE**
-├── jplatform-cluster-consul/   # Consul clustering plugin ⚠️ **STUB**
+├── jplatform-cluster-consul/   # Consul clustering plugin ✅
 ├── jplatform-cluster-etcd/     # etcd clustering plugin ⚠️ **STUB**
 ├── jplatform-cluster-redis/    # Redis clustering plugin ⚠️ **STUB**
 ├── jplatform-cluster-zookeeper/ # ZooKeeper clustering plugin ⚠️ **STUB**
-├── jplatform-registry-consul/  # Consul service registry ⚠️ **STUB**
+├── jplatform-registry-consul/  # Consul service registry ✅
 ├── jplatform-registry-etcd/    # etcd service registry ⚠️ **STUB**
 ├── jplatform-registry-eureka/  # Eureka service registry ⚠️ **STUB**
 ├── jplatform-storage-s3/       # S3 volume storage ⚠️ **STUB**
