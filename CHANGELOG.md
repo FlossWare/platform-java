@@ -7,6 +7,9 @@ and this project adheres to X.Y semantic versioning.
 
 ## [Unreleased]
 
+### Changed
+- CI/CD pipeline now active with automated version bumping and artifact publishing
+
 ## [1.1] - 2024-05-23
 
 ### Added
