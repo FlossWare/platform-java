@@ -121,8 +121,12 @@ public class ConsulConfig {
          *
          * @param consulHost the host address
          * @return this builder for chaining
+         * @throws IllegalArgumentException if consulHost is null or empty
          */
         public Builder consulHost(String consulHost) {
+            if (consulHost == null || consulHost.trim().isEmpty()) {
+                throw new IllegalArgumentException("ConsulHost must not be null or empty");
+            }
             this.consulHost = consulHost;
             return this;
         }
@@ -132,8 +136,12 @@ public class ConsulConfig {
          *
          * @param consulPort the port number
          * @return this builder for chaining
+         * @throws IllegalArgumentException if port is not in valid range (1-65535)
          */
         public Builder consulPort(int consulPort) {
+            if (consulPort < 1 || consulPort > 65535) {
+                throw new IllegalArgumentException("ConsulPort must be between 1 and 65535");
+            }
             this.consulPort = consulPort;
             return this;
         }
@@ -158,8 +166,12 @@ public class ConsulConfig {
          *
          * @param serviceName the service name
          * @return this builder for chaining
+         * @throws IllegalArgumentException if serviceName is null or empty
          */
         public Builder serviceName(String serviceName) {
+            if (serviceName == null || serviceName.trim().isEmpty()) {
+                throw new IllegalArgumentException("ServiceName must not be null or empty");
+            }
             this.serviceName = serviceName;
             return this;
         }

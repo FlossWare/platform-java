@@ -118,8 +118,12 @@ public class EtcdConfig {
          *
          * @param endpoint the endpoint URL (e.g., "http://localhost:2379")
          * @return this builder for chaining
+         * @throws IllegalArgumentException if endpoint is null or empty
          */
         public Builder addEndpoint(String endpoint) {
+            if (endpoint == null || endpoint.trim().isEmpty()) {
+                throw new IllegalArgumentException("Endpoint must not be null or empty");
+            }
             if (this.endpoints.size() == 1 && "http://localhost:2379".equals(this.endpoints.get(0))) {
                 this.endpoints.clear();
             }
@@ -132,8 +136,17 @@ public class EtcdConfig {
          *
          * @param endpoints the list of endpoint URLs
          * @return this builder for chaining
+         * @throws IllegalArgumentException if endpoints list is null or contains null/empty entries
          */
         public Builder endpoints(List<String> endpoints) {
+            if (endpoints == null) {
+                throw new IllegalArgumentException("Endpoints list must not be null");
+            }
+            for (String endpoint : endpoints) {
+                if (endpoint == null || endpoint.trim().isEmpty()) {
+                    throw new IllegalArgumentException("Endpoints list must not contain null or empty entries");
+                }
+            }
             this.endpoints.clear();
             this.endpoints.addAll(endpoints);
             return this;
