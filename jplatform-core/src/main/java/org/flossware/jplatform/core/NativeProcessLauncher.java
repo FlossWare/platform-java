@@ -155,13 +155,8 @@ public class NativeProcessLauncher {
         // Add arguments from native.args property
         String argsProperty = descriptor.getProperties().get("native.args");
         if (argsProperty != null && !argsProperty.isEmpty()) {
-            // Simple split by space - could be enhanced to handle quoted args
-            String[] args = argsProperty.split("\\s+");
-            for (String arg : args) {
-                if (!arg.isEmpty()) {
-                    command.add(arg);
-                }
-            }
+            // Parse arguments with proper quote handling
+            command.addAll(ArgumentParser.parseArguments(argsProperty));
         }
 
         return command;

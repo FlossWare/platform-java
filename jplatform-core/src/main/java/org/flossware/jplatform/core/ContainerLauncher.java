@@ -253,11 +253,8 @@ public class ContainerLauncher {
         // Additional arguments
         String args = properties.get("container.args");
         if (args != null && !args.isEmpty()) {
-            for (String arg : args.split("\\s+")) {
-                if (!arg.isEmpty()) {
-                    command.add(arg);
-                }
-            }
+            // Parse arguments with proper quote handling
+            command.addAll(ArgumentParser.parseArguments(args));
         }
 
         return command;
