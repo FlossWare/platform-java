@@ -84,18 +84,14 @@ class FileSystemDeploymentWatcherTest {
 
     @Test
     void testStartNullWatchDirectory() {
-        WatcherConfig badConfig = WatcherConfig.builder()
-                .watchDirectory(null)
-                .build();
-
-        FileSystemDeploymentWatcher badWatcher = new FileSystemDeploymentWatcher(badConfig);
-
+        // Validation now happens at build time, not start time
         Exception exception = assertThrows(IllegalStateException.class, () -> {
-            badWatcher.start();
+            WatcherConfig.builder()
+                    .watchDirectory(null)
+                    .build();
         });
 
-        assertTrue(exception.getMessage().contains("Watch directory is not configured"));
-        assertFalse(badWatcher.isRunning());
+        assertTrue(exception.getMessage().contains("watchDirectory is required"));
     }
 
     @Test

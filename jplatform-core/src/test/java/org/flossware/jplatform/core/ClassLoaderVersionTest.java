@@ -114,8 +114,8 @@ class ClassLoaderVersionTest {
 
     @Test
     void testConstructorWithNullClassLoader() {
-        // Verify that constructor accepts null ClassLoader (defensive)
-        assertDoesNotThrow(() -> {
+        // Verify that constructor rejects null ClassLoader
+        assertThrows(NullPointerException.class, () -> {
             new ClassLoaderVersion(1, null);
         });
     }

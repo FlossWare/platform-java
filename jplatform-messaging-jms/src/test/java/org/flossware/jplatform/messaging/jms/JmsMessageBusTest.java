@@ -148,7 +148,11 @@ class JmsMessageBusTest {
     void testPublish_nullTopic() throws JMSException {
         messageBus = new JmsMessageBus(config, connectionFactory);
 
-        Message message = Message.builder().payload("test".getBytes()).build();
+        Message message = Message.builder()
+                .topic("test-topic")
+                .sourceApplicationId("test-app")
+                .payload("test".getBytes())
+                .build();
 
         assertThrows(NullPointerException.class,
                 () -> messageBus.publish(null, message));
@@ -167,7 +171,11 @@ class JmsMessageBusTest {
         messageBus = new JmsMessageBus(config, connectionFactory);
         messageBus.close();
 
-        Message message = Message.builder().payload("test".getBytes()).build();
+        Message message = Message.builder()
+                .topic("test-topic")
+                .sourceApplicationId("test-app")
+                .payload("test".getBytes())
+                .build();
 
         assertThrows(java.lang.IllegalStateException.class,
                 () -> messageBus.publish("test-topic", message));
@@ -179,7 +187,11 @@ class JmsMessageBusTest {
 
         when(publishSession.createTopic("test-topic")).thenThrow(new JMSException("Failed"));
 
-        Message message = Message.builder().payload("test".getBytes()).build();
+        Message message = Message.builder()
+                .topic("test-topic")
+                .sourceApplicationId("test-app")
+                .payload("test".getBytes())
+                .build();
 
         assertThrows(RuntimeException.class,
                 () -> messageBus.publish("test-topic", message));
@@ -195,6 +207,7 @@ class JmsMessageBusTest {
 
         Message message = Message.builder()
                 .topic("test-topic")
+                .sourceApplicationId("test-app")
                 .payload(null)
                 .build();
 
@@ -218,6 +231,7 @@ class JmsMessageBusTest {
 
         Message message = Message.builder()
                 .topic("test-topic")
+                .sourceApplicationId("test-app")
                 .headers(headers)
                 .payload("test".getBytes())
                 .build();
@@ -502,6 +516,7 @@ class JmsMessageBusTest {
 
         when(bytesMessage.getJMSMessageID()).thenReturn("msg-123");
         when(bytesMessage.getJMSTimestamp()).thenReturn(System.currentTimeMillis());
+        when(bytesMessage.getStringProperty("sourceApplicationId")).thenReturn("test-app");
         when(bytesMessage.getBodyLength()).thenReturn(0L);
 
         CountDownLatch latch = new CountDownLatch(1);
