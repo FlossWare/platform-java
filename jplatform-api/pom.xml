@@ -15,6 +15,13 @@
     <description>Public APIs for JPlatform - interfaces and contracts for applications and deployers</description>
 
     <dependencies>
-        <!-- No dependencies - pure interfaces -->
+        <!-- No runtime dependencies - pure interfaces -->
+
+        <!-- Test dependencies -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 </project>

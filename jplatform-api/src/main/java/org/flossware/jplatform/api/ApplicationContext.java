@@ -1,5 +1,6 @@
 package org.flossware.jplatform.api;
 
+import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 
@@ -38,6 +39,13 @@ public interface ApplicationContext {
      * @see ApplicationState
      */
     ApplicationState getState();
+
+    /**
+     * Returns the timestamp when this application was deployed.
+     *
+     * @return the deployment timestamp
+     */
+    Instant getDeployedAt();
 
     /**
      * Returns the isolated classloader for this application.

@@ -2,6 +2,7 @@ package org.flossware.jplatform.core;
 
 import org.flossware.jplatform.api.*;
 
+import java.time.Instant;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
@@ -28,6 +29,7 @@ public class ApplicationContextImpl implements ApplicationContext {
     private final VolumeManager volumeManager;  // Added in 2.0
     private final Map<String, String> properties;
     private volatile Object applicationInstance;
+    private final Instant deployedAt;  // Timestamp when application was deployed
 
     private ApplicationContextImpl(Builder builder) {
         this.applicationId = builder.applicationId;
@@ -42,6 +44,7 @@ public class ApplicationContextImpl implements ApplicationContext {
         this.volumeManager = builder.volumeManager;
         this.properties = builder.properties != null ?
                 Collections.unmodifiableMap(builder.properties) : Collections.emptyMap();
+        this.deployedAt = Instant.now();  // Capture deployment timestamp
     }
 
     @Override
@@ -52,6 +55,11 @@ public class ApplicationContextImpl implements ApplicationContext {
     @Override
     public ApplicationState getState() {
         return state;
+    }
+
+    @Override
+    public Instant getDeployedAt() {
+        return deployedAt;
     }
 
     @Override

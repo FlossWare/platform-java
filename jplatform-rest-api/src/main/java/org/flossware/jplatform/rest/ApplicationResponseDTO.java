@@ -110,7 +110,7 @@ public class ApplicationResponseDTO {
                 context.getApplicationId(),
                 context.getProperties().getOrDefault("name", context.getApplicationId()),
                 context.getState().name(),
-                System.currentTimeMillis(), // TODO: Track actual deployment time
+                context.getDeployedAt().toEpochMilli(),
                 threadPoolStats,
                 resourceMetrics
         );

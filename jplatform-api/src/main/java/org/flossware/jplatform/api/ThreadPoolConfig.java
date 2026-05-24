@@ -147,8 +147,25 @@ public class ThreadPoolConfig {
          * Builds the ThreadPoolConfig instance.
          *
          * @return a new ThreadPoolConfig with the configured values
+         * @throws IllegalArgumentException if any parameter is invalid
          */
         public ThreadPoolConfig build() {
+            if (corePoolSize < 0) {
+                throw new IllegalArgumentException("corePoolSize must be >= 0, got: " + corePoolSize);
+            }
+            if (maxPoolSize <= 0) {
+                throw new IllegalArgumentException("maxPoolSize must be > 0, got: " + maxPoolSize);
+            }
+            if (maxPoolSize < corePoolSize) {
+                throw new IllegalArgumentException(
+                    "maxPoolSize (" + maxPoolSize + ") must be >= corePoolSize (" + corePoolSize + ")");
+            }
+            if (keepAliveTimeSeconds < 0) {
+                throw new IllegalArgumentException("keepAliveTimeSeconds must be >= 0, got: " + keepAliveTimeSeconds);
+            }
+            if (queueCapacity < 0) {
+                throw new IllegalArgumentException("queueCapacity must be >= 0, got: " + queueCapacity);
+            }
             return new ThreadPoolConfig(this);
         }
     }
