@@ -686,3 +686,26 @@ Similar concepts:
 - **Kubernetes**: Container orchestration (but at process level)
 
 JPlatform focuses on simplicity and running arbitrary Java applications (not just web apps) with strong isolation guarantees within a single JVM.
+
+## Documentation
+
+### Getting Started
+- **[Quick Reference](docs/QUICK_REFERENCE.md)** - Command reference and YAML templates
+- **[Architecture Guide](docs/ARCHITECTURE.md)** - System architecture and design
+- **[Troubleshooting Guide](docs/TROUBLESHOOTING.md)** - Common issues and solutions
+
+### Deployment Guides
+- **[VM Management](jplatform-vm-management/README.md)** - Virtual machine deployment
+- **[Container Deployment](CONTAINER_DEPLOYMENT.md)** - Container orchestration
+- **[Native Execution](NATIVE_EXECUTION.md)** - Native binary support
+
+### Advanced Topics
+- **[Hot Reload](HOT_RELOAD.md)** - Zero-downtime code updates
+- **[Resource Enforcement](RESOURCE_ENFORCEMENT.md)** - Resource quotas and limits
+- **[Application Dependencies](APPLICATION_DEPENDENCIES.md)** - Dependency management
+- **[Volumes](VOLUMES.md)** - Persistent storage
+- **[Observability](OBSERVABILITY.md)** - Metrics and tracing
+
+### Examples
+- **[Multi-Tier Applications](examples/multi-tier/)** - Complete application examples
+- **[Three-Tier Web App](examples/multi-tier/three-tier-webapp/)** - VM + Java + Container example
