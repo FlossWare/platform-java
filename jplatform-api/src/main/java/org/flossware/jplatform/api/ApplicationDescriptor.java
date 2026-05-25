@@ -234,6 +234,9 @@ public class ApplicationDescriptor {
          * @return this builder
          */
         public Builder applicationId(String applicationId) {
+            if (applicationId == null || applicationId.trim().isEmpty()) {
+                throw new IllegalArgumentException("applicationId cannot be null or empty");
+            }
             this.applicationId = applicationId;
             return this;
         }
@@ -270,6 +273,9 @@ public class ApplicationDescriptor {
          * @return this builder
          */
         public Builder mainClass(String mainClass) {
+            if (mainClass == null || mainClass.trim().isEmpty()) {
+                throw new IllegalArgumentException("mainClass cannot be null or empty");
+            }
             this.mainClass = mainClass;
             return this;
         }
@@ -360,6 +366,11 @@ public class ApplicationDescriptor {
          * @return this builder
          */
         public Builder property(String key, String value) {
+            if (key == null || key.trim().isEmpty()) {
+                throw new IllegalArgumentException("Property key cannot be null or empty");
+            }
+            // Note: value can legitimately be null for unset/placeholder properties
+
             if (this.properties == null) {
                 this.properties = new HashMap<>();
             }
