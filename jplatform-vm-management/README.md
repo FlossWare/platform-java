@@ -312,17 +312,114 @@ See `src/main/resources/examples/` for:
 - `database-vm.yaml` - High-resource database VM
 - `web-server-vm.yaml` - Lightweight web server VM
 
-## Limitations
+## Advanced Features (2.2+)
 
-**Current version:**
+### Live Migration
+
+Migrate running VMs between hosts with minimal downtime:
+
+```java
+import org.flossware.jplatform.vm.VmLauncher;
+
+VmLauncher launcher = new VmLauncher();
+VmLauncher.VmInfo vmInfo = launcher.launch("app-vm", descriptor);
+
+// Migrate to another host
+String destUri = "qemu+ssh://host2.example.com/system";
+launcher.migrate("app-vm", vmInfo, destUri, 0);
+```
+
+**Use cases:**
+- Load balancing across hosts
+- Hardware maintenance without downtime
+- Resource optimization
+
+### VM Snapshots
+
+Create point-in-time snapshots for backup and rollback:
+
+```java
+// Create snapshot
+String snapshotName = launcher.createSnapshot(
+    "app-vm", 
+    vmInfo, 
+    "before-upgrade", 
+    "Snapshot before applying updates"
+);
+
+// List all snapshots
+String[] snapshots = launcher.listSnapshots(vmInfo);
+for (String snap : snapshots) {
+    System.out.println("Snapshot: " + snap);
+}
+
+// Revert to snapshot
+launcher.revertToSnapshot("app-vm", vmInfo, "before-upgrade");
+
+// Delete snapshot
+launcher.deleteSnapshot("app-vm", vmInfo, "before-upgrade");
+```
+
+**Use cases:**
+- Backup before changes
+- Testing and rollback
+- Development environments
+
+### Hot-Add Resources
+
+Dynamically add CPU and memory to running VMs:
+
+```java
+// Add 2 more vCPUs
+launcher.hotAddCpu("app-vm", vmInfo, 2);
+
+// Add 4GB more RAM
+launcher.hotAddMemory("app-vm", vmInfo, 4096);
+
+// Resize both at once
+launcher.resize("app-vm", vmInfo, 8, 16384);  // 8 vCPUs, 16GB RAM
+```
+
+**Use cases:**
+- Scale up under load
+- Adjust to workload demands
+- Optimize resource allocation
+
+### CLI Usage
+
+```bash
+# Live migration
+jplatform migrate app-vm --destination qemu+ssh://host2/system
+
+# Snapshots
+jplatform snapshot create app-vm --name before-upgrade
+jplatform snapshot list app-vm
+jplatform snapshot revert app-vm --name before-upgrade
+jplatform snapshot delete app-vm --name before-upgrade
+
+# Hot-add resources
+jplatform resize app-vm --vcpu 8 --memory 16384
+```
+
+## Feature Status
+
+**Version 2.1:**
 - ✅ VM creation and lifecycle (create, start, stop, destroy)
 - ✅ Resource configuration (vCPU, memory, disk)
 - ✅ Networking (bridge, NAT)
 - ✅ VNC console access
 - ✅ Resource monitoring
-- ❌ Live migration (planned for 2.2)
-- ❌ Snapshots (planned for 2.2)
-- ❌ Multi-host clustering (planned for 2.3)
+
+**Version 2.2:**
+- ✅ Live migration
+- ✅ VM snapshots (create, list, revert, delete)
+- ✅ Hot-add resources (CPU, memory)
+
+**Planned (2.3+):**
+- ❌ Multi-host clustering
+- ❌ GPU passthrough
+- ❌ Storage live migration
+- ❌ VM templates
 
 ## Troubleshooting
 

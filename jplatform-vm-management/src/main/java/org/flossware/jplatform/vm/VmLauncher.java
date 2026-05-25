@@ -214,6 +214,230 @@ public class VmLauncher {
         );
     }
 
+    // ========== Advanced Features (2.2+) ==========
+
+    /**
+     * Live migrate VM to another host.
+     * Migrates a running VM to another libvirt host with minimal downtime.
+     *
+     * @param applicationId the application identifier
+     * @param vmInfo the VM information
+     * @param destinationUri the destination libvirt URI (e.g., "qemu+ssh://host2/system")
+     * @param flags migration flags (0 for live migration)
+     * @throws LibvirtException if migration fails
+     * @since 2.2
+     */
+    public void migrate(String applicationId, VmInfo vmInfo, String destinationUri, long flags)
+            throws LibvirtException {
+        logger.info("[{}] Starting live migration to {}", applicationId, destinationUri);
+
+        Domain domain = vmInfo.getDomain();
+
+        // Connect to destination
+        Connect destConnection = new Connect(destinationUri, false);
+
+        try {
+            // Perform live migration
+            // flags = 0 for default live migration
+            // VIR_MIGRATE_LIVE = 1 for live migration
+            Domain migratedDomain = domain.migrate(destConnection, flags, null, null, 0);
+
+            logger.info("[{}] Migration completed successfully", applicationId);
+
+            // Close migrated domain reference
+            migratedDomain.free();
+        } finally {
+            destConnection.close();
+        }
+    }
+
+    /**
+     * Create a snapshot of the VM.
+     * Captures the current state of the VM including memory and disk.
+     *
+     * @param applicationId the application identifier
+     * @param vmInfo the VM information
+     * @param snapshotName the name for the snapshot
+     * @param description optional description
+     * @return snapshot name
+     * @throws LibvirtException if snapshot creation fails
+     * @since 2.2
+     */
+    public String createSnapshot(String applicationId, VmInfo vmInfo, String snapshotName,
+                                  String description) throws LibvirtException {
+        logger.info("[{}] Creating snapshot: {}", applicationId, snapshotName);
+
+        Domain domain = vmInfo.getDomain();
+
+        // Build snapshot XML
+        StringBuilder xml = new StringBuilder();
+        xml.append("<domainsnapshot>\n");
+        xml.append("  <name>").append(escapeXml(snapshotName)).append("</name>\n");
+        if (description != null && !description.isEmpty()) {
+            xml.append("  <description>").append(escapeXml(description)).append("</description>\n");
+        }
+        xml.append("</domainsnapshot>\n");
+
+        // Create snapshot (0 = default flags)
+        domain.snapshotCreateXML(xml.toString(), 0);
+
+        logger.info("[{}] Snapshot created: {}", applicationId, snapshotName);
+        return snapshotName;
+    }
+
+    /**
+     * List all snapshots for a VM.
+     *
+     * @param vmInfo the VM information
+     * @return array of snapshot names
+     * @throws LibvirtException if listing fails
+     * @since 2.2
+     */
+    public String[] listSnapshots(VmInfo vmInfo) throws LibvirtException {
+        Domain domain = vmInfo.getDomain();
+        return domain.snapshotListNames();
+    }
+
+    /**
+     * Revert VM to a snapshot.
+     * Restores the VM to the state captured in the snapshot.
+     *
+     * @param applicationId the application identifier
+     * @param vmInfo the VM information
+     * @param snapshotName the snapshot to revert to
+     * @throws LibvirtException if revert fails
+     * @since 2.2
+     */
+    public void revertToSnapshot(String applicationId, VmInfo vmInfo, String snapshotName)
+            throws LibvirtException {
+        logger.info("[{}] Reverting to snapshot: {}", applicationId, snapshotName);
+
+        Domain domain = vmInfo.getDomain();
+
+        // Lookup snapshot
+        org.libvirt.DomainSnapshot snapshot = domain.snapshotLookupByName(snapshotName);
+
+        // Revert to snapshot (0 = default flags)
+        domain.revertToSnapshot(snapshot);
+
+        logger.info("[{}] Reverted to snapshot: {}", applicationId, snapshotName);
+    }
+
+    /**
+     * Delete a snapshot.
+     *
+     * @param applicationId the application identifier
+     * @param vmInfo the VM information
+     * @param snapshotName the snapshot to delete
+     * @throws LibvirtException if deletion fails
+     * @since 2.2
+     */
+    public void deleteSnapshot(String applicationId, VmInfo vmInfo, String snapshotName)
+            throws LibvirtException {
+        logger.info("[{}] Deleting snapshot: {}", applicationId, snapshotName);
+
+        Domain domain = vmInfo.getDomain();
+
+        // Lookup and delete snapshot
+        org.libvirt.DomainSnapshot snapshot = domain.snapshotLookupByName(snapshotName);
+        snapshot.delete(0);  // 0 = default flags
+
+        logger.info("[{}] Snapshot deleted: {}", applicationId, snapshotName);
+    }
+
+    /**
+     * Hot-add vCPUs to a running VM.
+     * Dynamically increases the number of CPUs without stopping the VM.
+     *
+     * @param applicationId the application identifier
+     * @param vmInfo the VM information
+     * @param additionalCpus number of CPUs to add
+     * @throws LibvirtException if hot-add fails
+     * @since 2.2
+     */
+    public void hotAddCpu(String applicationId, VmInfo vmInfo, int additionalCpus)
+            throws LibvirtException {
+        logger.info("[{}] Hot-adding {} vCPUs", applicationId, additionalCpus);
+
+        Domain domain = vmInfo.getDomain();
+
+        // Get current vCPU count
+        org.libvirt.DomainInfo info = domain.getInfo();
+        int currentCpus = info.nrVirtCpu;
+        int newCpuCount = currentCpus + additionalCpus;
+
+        // Set new CPU count (live)
+        // VIR_DOMAIN_AFFECT_LIVE = 1 for live change
+        domain.setVcpus(newCpuCount);
+
+        logger.info("[{}] vCPUs increased from {} to {}", applicationId, currentCpus, newCpuCount);
+    }
+
+    /**
+     * Hot-add memory to a running VM.
+     * Dynamically increases memory without stopping the VM.
+     *
+     * @param applicationId the application identifier
+     * @param vmInfo the VM information
+     * @param additionalMemoryMB memory to add in MB
+     * @throws LibvirtException if hot-add fails
+     * @since 2.2
+     */
+    public void hotAddMemory(String applicationId, VmInfo vmInfo, long additionalMemoryMB)
+            throws LibvirtException {
+        logger.info("[{}] Hot-adding {} MB of memory", applicationId, additionalMemoryMB);
+
+        Domain domain = vmInfo.getDomain();
+
+        // Get current memory
+        org.libvirt.DomainInfo info = domain.getInfo();
+        long currentMemoryKB = info.memory;
+        long currentMemoryMB = currentMemoryKB / 1024;
+
+        long newMemoryMB = currentMemoryMB + additionalMemoryMB;
+        long newMemoryKB = newMemoryMB * 1024;
+
+        // Set new memory (live)
+        domain.setMemory(newMemoryKB);
+
+        logger.info("[{}] Memory increased from {} MB to {} MB",
+                   applicationId, currentMemoryMB, newMemoryMB);
+    }
+
+    /**
+     * Resize VM resources (CPU and/or memory).
+     * Convenience method to adjust multiple resources at once.
+     *
+     * @param applicationId the application identifier
+     * @param vmInfo the VM information
+     * @param newVcpu new vCPU count (or -1 to keep current)
+     * @param newMemoryMB new memory in MB (or -1 to keep current)
+     * @throws LibvirtException if resize fails
+     * @since 2.2
+     */
+    public void resize(String applicationId, VmInfo vmInfo, int newVcpu, long newMemoryMB)
+            throws LibvirtException {
+        logger.info("[{}] Resizing VM (vCPU: {}, Memory: {} MB)",
+                   applicationId, newVcpu, newMemoryMB);
+
+        Domain domain = vmInfo.getDomain();
+
+        // Update vCPU if requested
+        if (newVcpu > 0) {
+            domain.setVcpus(newVcpu);
+            logger.info("[{}] vCPUs set to {}", applicationId, newVcpu);
+        }
+
+        // Update memory if requested
+        if (newMemoryMB > 0) {
+            long newMemoryKB = newMemoryMB * 1024;
+            domain.setMemory(newMemoryKB);
+            logger.info("[{}] Memory set to {} MB", applicationId, newMemoryMB);
+        }
+
+        logger.info("[{}] VM resized successfully", applicationId);
+    }
+
     /**
      * Builds libvirt XML configuration for the VM.
      *

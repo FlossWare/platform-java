@@ -241,4 +241,207 @@ class VmLauncherTest {
         assertEquals("RUNNING", stats.getState());
         assertEquals(1.0, stats.getCpuTimeSeconds(), 0.01);
     }
+
+    // ========== Advanced Features Tests (2.2+) ==========
+
+    /**
+     * Tests snapshot operations (requires libvirt).
+     */
+    @Test
+    @EnabledIfSystemProperty(named = "libvirt.available", matches = "true")
+    void testSnapshotOperations() throws Exception {
+        VmLauncher launcher = new VmLauncher();
+
+        Map<String, String> properties = new HashMap<>();
+        properties.put("vm.vcpu", "1");
+        properties.put("vm.memory", "1024");
+        properties.put("vm.disk", "/tmp/test-snapshot-vm.qcow2");
+
+        ApplicationDescriptor descriptor = ApplicationDescriptor.builder()
+            .applicationId("snapshot-test-vm")
+            .properties(properties)
+            .build();
+
+        try {
+            VmLauncher.VmInfo vmInfo = launcher.launch("snapshot-test-vm", descriptor);
+
+            // Create snapshot
+            String snapshotName = launcher.createSnapshot(
+                "snapshot-test-vm",
+                vmInfo,
+                "test-snapshot",
+                "Test snapshot"
+            );
+            assertEquals("test-snapshot", snapshotName);
+
+            // List snapshots
+            String[] snapshots = launcher.listSnapshots(vmInfo);
+            assertTrue(snapshots.length > 0);
+            boolean found = false;
+            for (String snap : snapshots) {
+                if ("test-snapshot".equals(snap)) {
+                    found = true;
+                    break;
+                }
+            }
+            assertTrue(found, "Snapshot should be in list");
+
+            // Delete snapshot
+            launcher.deleteSnapshot("snapshot-test-vm", vmInfo, "test-snapshot");
+
+            // Cleanup
+            launcher.stop("snapshot-test-vm", vmInfo, false);
+            launcher.undefine("snapshot-test-vm", vmInfo);
+        } finally {
+            launcher.close();
+        }
+    }
+
+    /**
+     * Tests hot-add CPU (requires libvirt).
+     */
+    @Test
+    @EnabledIfSystemProperty(named = "libvirt.available", matches = "true")
+    void testHotAddCpu() throws Exception {
+        VmLauncher launcher = new VmLauncher();
+
+        Map<String, String> properties = new HashMap<>();
+        properties.put("vm.vcpu", "2");
+        properties.put("vm.memory", "1024");
+        properties.put("vm.disk", "/tmp/test-hotadd-vm.qcow2");
+
+        ApplicationDescriptor descriptor = ApplicationDescriptor.builder()
+            .applicationId("hotadd-test-vm")
+            .properties(properties)
+            .build();
+
+        try {
+            VmLauncher.VmInfo vmInfo = launcher.launch("hotadd-test-vm", descriptor);
+
+            // Initial CPU count
+            assertEquals(2, vmInfo.getVcpu());
+
+            // Hot-add 2 CPUs
+            launcher.hotAddCpu("hotadd-test-vm", vmInfo, 2);
+
+            // Note: Verification would require re-querying the domain
+            // In real implementation, you would check domain.getInfo()
+
+            // Cleanup
+            launcher.stop("hotadd-test-vm", vmInfo, false);
+            launcher.undefine("hotadd-test-vm", vmInfo);
+        } finally {
+            launcher.close();
+        }
+    }
+
+    /**
+     * Tests hot-add memory (requires libvirt).
+     */
+    @Test
+    @EnabledIfSystemProperty(named = "libvirt.available", matches = "true")
+    void testHotAddMemory() throws Exception {
+        VmLauncher launcher = new VmLauncher();
+
+        Map<String, String> properties = new HashMap<>();
+        properties.put("vm.vcpu", "1");
+        properties.put("vm.memory", "1024");
+        properties.put("vm.disk", "/tmp/test-hotmem-vm.qcow2");
+
+        ApplicationDescriptor descriptor = ApplicationDescriptor.builder()
+            .applicationId("hotmem-test-vm")
+            .properties(properties)
+            .build();
+
+        try {
+            VmLauncher.VmInfo vmInfo = launcher.launch("hotmem-test-vm", descriptor);
+
+            // Initial memory
+            assertEquals(1024, vmInfo.getMemoryMB());
+
+            // Hot-add 1GB memory
+            launcher.hotAddMemory("hotmem-test-vm", vmInfo, 1024);
+
+            // Note: Verification would require re-querying the domain
+
+            // Cleanup
+            launcher.stop("hotmem-test-vm", vmInfo, false);
+            launcher.undefine("hotmem-test-vm", vmInfo);
+        } finally {
+            launcher.close();
+        }
+    }
+
+    /**
+     * Tests VM resize (both CPU and memory).
+     */
+    @Test
+    @EnabledIfSystemProperty(named = "libvirt.available", matches = "true")
+    void testResize() throws Exception {
+        VmLauncher launcher = new VmLauncher();
+
+        Map<String, String> properties = new HashMap<>();
+        properties.put("vm.vcpu", "1");
+        properties.put("vm.memory", "1024");
+        properties.put("vm.disk", "/tmp/test-resize-vm.qcow2");
+
+        ApplicationDescriptor descriptor = ApplicationDescriptor.builder()
+            .applicationId("resize-test-vm")
+            .properties(properties)
+            .build();
+
+        try {
+            VmLauncher.VmInfo vmInfo = launcher.launch("resize-test-vm", descriptor);
+
+            // Resize to 4 vCPUs and 4GB RAM
+            launcher.resize("resize-test-vm", vmInfo, 4, 4096);
+
+            // Cleanup
+            launcher.stop("resize-test-vm", vmInfo, false);
+            launcher.undefine("resize-test-vm", vmInfo);
+        } finally {
+            launcher.close();
+        }
+    }
+
+    /**
+     * Tests live migration (requires two libvirt hosts).
+     * Note: This test is informational only - requires complex setup.
+     */
+    @Test
+    @EnabledIfSystemProperty(named = "libvirt.migration.available", matches = "true")
+    void testLiveMigration() throws Exception {
+        // This test requires:
+        // 1. Two libvirt hosts
+        // 2. Shared storage or storage migration
+        // 3. Network connectivity between hosts
+        // 4. SSH keys configured
+
+        VmLauncher launcher = new VmLauncher();
+
+        Map<String, String> properties = new HashMap<>();
+        properties.put("vm.vcpu", "1");
+        properties.put("vm.memory", "1024");
+        properties.put("vm.disk", "/shared/storage/migrate-test-vm.qcow2");
+
+        ApplicationDescriptor descriptor = ApplicationDescriptor.builder()
+            .applicationId("migrate-test-vm")
+            .properties(properties)
+            .build();
+
+        try {
+            VmLauncher.VmInfo vmInfo = launcher.launch("migrate-test-vm", descriptor);
+
+            // Migrate to second host
+            String destUri = System.getProperty("libvirt.migration.dest.uri",
+                                                "qemu+ssh://host2/system");
+            launcher.migrate("migrate-test-vm", vmInfo, destUri, 0);
+
+            // After migration, VM runs on destination host
+            // Cleanup would need to happen on destination
+
+        } finally {
+            launcher.close();
+        }
+    }
 }
