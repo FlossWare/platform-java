@@ -54,8 +54,9 @@ public class ResourceSnapshot {
         if (cpuTimeNanos < 0) {
             throw new IllegalArgumentException("cpuTimeNanos cannot be negative: " + cpuTimeNanos);
         }
-        if (heapUsedBytes < 0) {
-            throw new IllegalArgumentException("heapUsedBytes cannot be negative: " + heapUsedBytes);
+        // Allow -1 to indicate "not available", but reject other negative values
+        if (heapUsedBytes < -1) {
+            throw new IllegalArgumentException("heapUsedBytes cannot be negative (except -1 for N/A): " + heapUsedBytes);
         }
         if (threadCount < 0) {
             throw new IllegalArgumentException("threadCount cannot be negative: " + threadCount);
