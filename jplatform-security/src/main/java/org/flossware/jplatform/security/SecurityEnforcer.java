@@ -154,7 +154,13 @@ public class SecurityEnforcer {
             return;
         }
 
-        SocketPermission permission = new SocketPermission(host + ":" + port, actions);
+        if (port < -1 || port > 65535) {
+            throw new IllegalArgumentException("Invalid port: " + port);
+        }
+
+        // Per SocketPermission spec: port -1 means "any port" and should be just hostname
+        String permissionTarget = (port == -1) ? host : (host + ":" + port);
+        SocketPermission permission = new SocketPermission(permissionTarget, actions);
         enforcePermission(permission);
     }
 
@@ -208,11 +214,17 @@ public class SecurityEnforcer {
         SecurityPolicy policy = policies.get(callerClassLoader);
 
         if (policy == null) {
-            // No policy registered - this could be:
-            // 1. Platform code (allow)
-            // 2. Application that hasn't registered a policy (allow with warning)
-            logger.debug("No security policy for ClassLoader {}, allowing access", callerClassLoader);
-            return;
+            // Check if this is a trusted platform classloader
+            if (isPlatformClassLoader(callerClassLoader)) {
+                logger.debug("Platform ClassLoader {}, allowing access", callerClassLoader);
+                return;
+            }
+
+            // No policy registered for application classloader - deny by default
+            logger.warn("No security policy registered for ClassLoader {}, denying {} access",
+                    callerClassLoader, permission.getClass().getSimpleName());
+            throw new SecurityException(
+                    "No security policy registered for ClassLoader: " + callerClassLoader);
         }
 
         // Enforce the policy
@@ -242,6 +254,24 @@ public class SecurityEnforcer {
                     .map(frame -> frame.getDeclaringClass().getClassLoader())
                     .orElse(null);
         });
+    }
+
+    /**
+     * Checks if a ClassLoader is a trusted platform classloader.
+     * <p>
+     * Trusted classloaders are:
+     * <ul>
+     *   <li>Platform classloader - loads platform modules</li>
+     *   <li>System classloader - loads JPlatform core classes</li>
+     * </ul>
+     *
+     * @param cl the ClassLoader to check
+     * @return true if the classloader is trusted
+     */
+    private boolean isPlatformClassLoader(ClassLoader cl) {
+        // Allow platform and system classloaders only
+        return cl == ClassLoader.getPlatformClassLoader() ||
+               cl == ClassLoader.getSystemClassLoader();
     }
 
     /**

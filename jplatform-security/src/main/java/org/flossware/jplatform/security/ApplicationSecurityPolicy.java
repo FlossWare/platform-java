@@ -107,11 +107,12 @@ public class ApplicationSecurityPolicy implements SecurityPolicy {
         // Check reflection permission
         if (permission instanceof RuntimePermission) {
             String name = permission.getName();
-            if (name.startsWith("accessDeclaredMembers") ||
-                name.startsWith("setAccessible")) {
+            // Exact match for reflection permissions (these are fixed names, not prefixes)
+            if ("accessDeclaredMembers".equals(name) || "setAccessible".equals(name)) {
                 return allowReflection;
             }
-            if (name.startsWith("loadLibrary")) {
+            // Prefix match for library loading (format: loadLibrary.{library_name})
+            if (name.startsWith("loadLibrary.")) {
                 return allowNativeCode;
             }
         }
