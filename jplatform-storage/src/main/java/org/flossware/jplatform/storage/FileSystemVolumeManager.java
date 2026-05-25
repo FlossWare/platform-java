@@ -76,6 +76,9 @@ public class FileSystemVolumeManager implements VolumeManager {
 
         // Register all volumes
         for (VolumeMount volume : volumes) {
+            if (this.volumes.containsKey(volume.getName())) {
+                throw new IllegalArgumentException("Duplicate volume name: " + volume.getName());
+            }
             this.volumes.put(volume.getName(), volume);
         }
 
@@ -165,7 +168,7 @@ public class FileSystemVolumeManager implements VolumeManager {
         if (volume == null) {
             throw new IllegalArgumentException("Volume not defined: " + volumeName);
         }
-        return (long) volume.getMaxSizeMB() * 1024 * 1024;  // Convert MB to bytes, cast to long to prevent overflow
+        return (long) volume.getMaxSizeMB() * 1024L * 1024L;
     }
 
     @Override
@@ -227,6 +230,10 @@ public class FileSystemVolumeManager implements VolumeManager {
 
             @Override
             public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+                if (exc != null) {
+                    // An error occurred visiting files in this directory
+                    throw exc;
+                }
                 Files.delete(dir);
                 return FileVisitResult.CONTINUE;
             }
