@@ -201,7 +201,7 @@ public class S3VolumeManager implements VolumeManager, AutoCloseable {
         if (mount == null) {
             throw new IllegalArgumentException("Volume not defined: " + volumeName);
         }
-        return mount.getMaxSizeMB() * 1024 * 1024;
+        return (long) mount.getMaxSizeMB() * 1024L * 1024L;
     }
 
     @Override
