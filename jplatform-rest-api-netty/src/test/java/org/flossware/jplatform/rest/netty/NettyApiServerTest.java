@@ -375,4 +375,153 @@ class NettyApiServerTest {
         NettyApiServer server = new NettyApiServer(config);
         assertEquals(1024, server.getPort());
     }
+
+    @Test
+    void testConfigBuilderWithEmptyHost() {
+        Exception exception = assertThrows(IllegalStateException.class, () -> {
+            NettyApiServerConfig.builder()
+                .host("")
+                .port(8080)
+                .build();
+        });
+        assertTrue(exception.getMessage().contains("Host must be specified"));
+    }
+
+    @Test
+    void testConfigBuilderWithInvalidPortNegative() {
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+            NettyApiServerConfig.builder()
+                .port(-1);
+        });
+        assertTrue(exception.getMessage().contains("Port must be between 1 and 65535"));
+    }
+
+    @Test
+    void testConfigBuilderWithInvalidPortTooHigh() {
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+            NettyApiServerConfig.builder()
+                .port(70000);
+        });
+        assertTrue(exception.getMessage().contains("Port must be between 1 and 65535"));
+    }
+
+    @Test
+    void testConfigBuilderWithInvalidBossThreads() {
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+            NettyApiServerConfig.builder()
+                .bossThreads(0);
+        });
+        assertTrue(exception.getMessage().contains("Boss threads must be at least 1"));
+    }
+
+    @Test
+    void testConfigBuilderWithInvalidWorkerThreads() {
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+            NettyApiServerConfig.builder()
+                .workerThreads(-1);
+        });
+        assertTrue(exception.getMessage().contains("Worker threads must be at least 0"));
+    }
+
+    @Test
+    void testConfigBuilderWithInvalidMaxContentLength() {
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+            NettyApiServerConfig.builder()
+                .maxContentLength(512);
+        });
+        assertTrue(exception.getMessage().contains("Max content length must be at least 1024"));
+    }
+
+    @Test
+    void testConfigBuilderWithMaxContentLengthTooLarge() {
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+            NettyApiServerConfig.builder()
+                .maxContentLength(200 * 1024 * 1024);
+        });
+        assertTrue(exception.getMessage().contains("exceeds maximum allowed"));
+    }
+
+    @Test
+    void testConfigBuilderWithInvalidBacklog() {
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+            NettyApiServerConfig.builder()
+                .backlog(0);
+        });
+        assertTrue(exception.getMessage().contains("Backlog must be at least 1"));
+    }
+
+    @Test
+    void testConfigBuilderWithInvalidGlobalRateLimit() {
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+            NettyApiServerConfig.builder()
+                .globalRateLimit(-1);
+        });
+        assertTrue(exception.getMessage().contains("Global rate limit must be >= 0"));
+    }
+
+    @Test
+    void testConfigBuilderWithInvalidPerIpRateLimit() {
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+            NettyApiServerConfig.builder()
+                .perIpRateLimit(-1);
+        });
+        assertTrue(exception.getMessage().contains("Per-IP rate limit must be >= 0"));
+    }
+
+    @Test
+    void testConfigBuilderWithInvalidReadTimeout() {
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+            NettyApiServerConfig.builder()
+                .readTimeout(0);
+        });
+        assertTrue(exception.getMessage().contains("Read timeout must be positive"));
+    }
+
+    @Test
+    void testConfigBuilderWithInvalidWriteTimeout() {
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+            NettyApiServerConfig.builder()
+                .writeTimeout(-1);
+        });
+        assertTrue(exception.getMessage().contains("Write timeout must be positive"));
+    }
+
+    @Test
+    void testAddRouteWhileRunning() throws Exception {
+        NettyApiServerConfig config = NettyApiServerConfig.builder()
+            .port(18091)
+            .build();
+
+        NettyApiServer server = new NettyApiServer(config);
+        server.start();
+
+        try {
+            Exception exception = assertThrows(IllegalStateException.class, () -> {
+                server.addRoute("/test", input -> "response");
+            });
+            assertTrue(exception.getMessage().contains("Cannot add routes while server is running"));
+        } finally {
+            server.stop();
+        }
+    }
+
+    @Test
+    void testRemoveRouteWhileRunning() throws Exception {
+        NettyApiServerConfig config = NettyApiServerConfig.builder()
+            .port(18092)
+            .build();
+
+        NettyApiServer server = new NettyApiServer(config);
+        server.addRoute("/test", input -> "response");
+        server.start();
+
+        try {
+            Exception exception = assertThrows(IllegalStateException.class, () -> {
+                server.removeRoute("/test");
+            });
+            assertTrue(exception.getMessage().contains("Cannot remove routes while server is running"));
+        } finally {
+            server.stop();
+        }
+    }
 }

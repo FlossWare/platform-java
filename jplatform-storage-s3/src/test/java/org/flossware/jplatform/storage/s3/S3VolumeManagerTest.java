@@ -431,4 +431,87 @@ class S3VolumeManagerTest {
         assertTrue(manager.volumeExists("data"));
         assertSame(s3Client, manager.getS3Client());
     }
+
+    @Test
+    void testUploadWithKeyPrefix() throws IOException {
+        S3StorageConfig configWithPrefix = S3StorageConfig.builder()
+            .accessKey("test-key")
+            .secretKey("test-secret")
+            .bucketName("test-bucket")
+            .keyPrefix("app/prod/")
+            .build();
+
+        S3VolumeManager manager = new S3VolumeManager(configWithPrefix, volumeMounts, s3Client);
+
+        Path volumePath = manager.getVolumePath("data");
+        Path testFile = volumePath.resolve("test.txt");
+        Files.writeString(testFile, "content");
+
+        when(s3Client.putObject(any(PutObjectRequest.class), any(RequestBody.class)))
+            .thenReturn(PutObjectResponse.builder().build());
+
+        manager.uploadFile("data", "test.txt");
+
+        verify(s3Client).putObject(any(PutObjectRequest.class), any(RequestBody.class));
+    }
+
+    @Test
+    void testDownloadWithKeyPrefix() throws IOException {
+        S3StorageConfig configWithPrefix = S3StorageConfig.builder()
+            .accessKey("test-key")
+            .secretKey("test-secret")
+            .bucketName("test-bucket")
+            .keyPrefix("app/prod/")
+            .build();
+
+        S3VolumeManager manager = new S3VolumeManager(configWithPrefix, volumeMounts, s3Client);
+
+        when(s3Client.getObject(any(GetObjectRequest.class), any(Path.class)))
+            .thenReturn(null);
+
+        manager.downloadFile("data", "test.txt");
+
+        verify(s3Client).getObject(any(GetObjectRequest.class), any(Path.class));
+    }
+
+    @Test
+    void testDownloadCreatesParentDirectories() throws IOException {
+        S3VolumeManager manager = new S3VolumeManager(config, volumeMounts, s3Client);
+
+        when(s3Client.getObject(any(GetObjectRequest.class), any(Path.class)))
+            .thenReturn(null);
+
+        manager.downloadFile("data", "subdir/nested/file.txt");
+
+        Path volumePath = manager.getVolumePath("data");
+        Path parentDir = volumePath.resolve("subdir/nested");
+        assertTrue(Files.exists(parentDir));
+        assertTrue(Files.isDirectory(parentDir));
+
+        verify(s3Client).getObject(any(GetObjectRequest.class), any(Path.class));
+    }
+
+    @Test
+    void testGetVolumeUsageBytesWithKeyPrefix() throws IOException {
+        S3StorageConfig configWithPrefix = S3StorageConfig.builder()
+            .accessKey("test-key")
+            .secretKey("test-secret")
+            .bucketName("test-bucket")
+            .keyPrefix("app/prod/")
+            .build();
+
+        S3VolumeManager manager = new S3VolumeManager(configWithPrefix, volumeMounts, s3Client);
+
+        when(s3Client.listObjectsV2(any(ListObjectsV2Request.class)))
+            .thenReturn(ListObjectsV2Response.builder()
+                .isTruncated(false)
+                .contents(Arrays.asList(
+                    S3Object.builder().key("app/prod/data/file1.txt").size(100L).build(),
+                    S3Object.builder().key("app/prod/data/file2.txt").size(200L).build()
+                ))
+                .build());
+
+        long usage = manager.getVolumeUsageBytes("data");
+        assertEquals(300, usage);
+    }
 }
