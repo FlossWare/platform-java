@@ -143,4 +143,20 @@ class PrometheusFormatterTest {
         assertTrue(result.contains("state=\"running\""));
         assertTrue(result.contains(" 1.0\n"));
     }
+
+    @Test
+    void testLabelValueNull() {
+        Map<String, String> labels = new HashMap<>();
+        labels.put("app_id", "test-app");
+        labels.put("version", null);  // null label value
+
+        // Should not throw NullPointerException, null should be converted to empty string
+        String result = PrometheusFormatter.formatGauge("my_metric", labels, 1.0);
+
+        assertNotNull(result);
+        assertTrue(result.startsWith("my_metric{"));
+        assertTrue(result.contains("app_id=\"test-app\""));
+        assertTrue(result.contains("version=\"\""));  // null becomes empty string
+        assertTrue(result.endsWith(" 1.0\n"));
+    }
 }

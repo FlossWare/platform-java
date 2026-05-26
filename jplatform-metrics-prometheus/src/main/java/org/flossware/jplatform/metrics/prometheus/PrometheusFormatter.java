@@ -121,10 +121,13 @@ public final class PrometheusFormatter {
      * Escapes special characters in label values according to Prometheus format.
      * Escapes backslashes, double quotes, and newlines.
      *
-     * @param value the label value to escape
-     * @return escaped label value
+     * @param value the label value to escape (may be null)
+     * @return escaped label value, or empty string if value is null
      */
     private static String escapeLabelValue(String value) {
+        if (value == null) {
+            return "";  // Prometheus doesn't allow null values, use empty string
+        }
         return value
                 .replace("\\", "\\\\")  // Escape backslashes first
                 .replace("\"", "\\\"")  // Escape double quotes
