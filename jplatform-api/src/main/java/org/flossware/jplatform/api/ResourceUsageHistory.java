@@ -34,10 +34,23 @@ public class ResourceUsageHistory {
      * The snapshot list is copied to ensure immutability.
      *
      * @param snapshots the list of resource snapshots, or null for an empty history
+     * @throws IllegalArgumentException if snapshots list contains null elements
      */
     public ResourceUsageHistory(List<ResourceSnapshot> snapshots) {
-        this.snapshots = snapshots != null ?
-                List.copyOf(snapshots) : Collections.emptyList();
+        if (snapshots == null) {
+            this.snapshots = Collections.emptyList();
+            return;
+        }
+
+        // Validate no null elements
+        for (int i = 0; i < snapshots.size(); i++) {
+            if (snapshots.get(i) == null) {
+                throw new IllegalArgumentException(
+                    "snapshots list cannot contain null elements (index " + i + ")");
+            }
+        }
+
+        this.snapshots = List.copyOf(snapshots);
     }
 
     /**
