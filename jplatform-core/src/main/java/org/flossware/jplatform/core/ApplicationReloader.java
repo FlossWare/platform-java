@@ -90,6 +90,11 @@ public class ApplicationReloader {
         IsolatedClassLoader newClassLoader = null;
         int newVersion = 0;
 
+        // Save old references for potential rollback
+        Object oldInstance = currentContext.getApplicationInstance();
+        ClassLoader oldClassLoader = currentContext.getClassLoader();
+        ApplicationDescriptor oldDescriptor = currentContext.getDescriptor();
+
         try {
             // Step 1: Create new classloader with updated code
             newVersion = incrementVersion(applicationId);
@@ -106,7 +111,6 @@ public class ApplicationReloader {
 
             // Step 2: Capture state if application supports reload
             Map<String, Object> savedState = null;
-            Object oldInstance = currentContext.getApplicationInstance();
             if (oldInstance instanceof ReloadableApplication) {
                 logger.info("[{}] Capturing state from ReloadableApplication", applicationId);
                 try {
@@ -128,7 +132,6 @@ public class ApplicationReloader {
             }
 
             // Step 4: Swap classloader and descriptor atomically
-            ClassLoader oldClassLoader = currentContext.getClassLoader();
             currentContext.setClassLoaderAndDescriptor(newClassLoader, newDescriptor);
 
             logger.info("[{}] Swapped classloader from old to version {}", applicationId, newVersion);
@@ -179,7 +182,27 @@ public class ApplicationReloader {
             logger.info("[{}] Hot reload complete - now on version {}", applicationId, newVersion);
 
         } catch (Exception e) {
-            logger.error("[{}] Hot reload failed", applicationId, e);
+            logger.error("[{}] Hot reload failed, attempting rollback", applicationId, e);
+
+            // Attempt to rollback to old instance
+            boolean rollbackSuccessful = false;
+            if (wasRunning && oldInstance instanceof Application) {
+                try {
+                    // Restore old classloader and descriptor
+                    currentContext.setClassLoaderAndDescriptor(oldClassLoader, oldDescriptor);
+
+                    // Restore old instance
+                    currentContext.setApplicationInstance(oldInstance);
+
+                    // Restart old instance
+                    ((Application) oldInstance).start(currentContext);
+                    currentContext.setState(ApplicationState.RUNNING);
+                    rollbackSuccessful = true;
+                    logger.info("[{}] Rollback successful, old instance restarted", applicationId);
+                } catch (Exception rollbackEx) {
+                    logger.error("[{}] Rollback failed, application left in stopped state", applicationId, rollbackEx);
+                }
+            }
 
             // Cleanup new classloader on failure to prevent resource leak
             if (newClassLoader != null) {
@@ -187,11 +210,14 @@ public class ApplicationReloader {
                     newClassLoader.close();
                     logger.info("[{}] Closed failed classloader version {}", applicationId, newVersion);
                 } catch (Exception closeEx) {
-                    logger.warn("[{}] Failed to close classloader during rollback", applicationId, closeEx);
+                    logger.warn("[{}] Failed to close classloader during cleanup", applicationId, closeEx);
                 }
             }
 
-            throw new Exception("Hot reload failed for " + applicationId, e);
+            String errorMessage = rollbackSuccessful
+                ? "Hot reload failed but successfully rolled back to previous version"
+                : "Hot reload failed and rollback also failed - application may be in stopped state";
+            throw new Exception(errorMessage + " for " + applicationId, e);
         } finally {
             Thread.currentThread().setContextClassLoader(platformSharedLoader);
         }
