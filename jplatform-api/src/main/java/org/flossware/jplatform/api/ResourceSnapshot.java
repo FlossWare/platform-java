@@ -43,7 +43,7 @@ public class ResourceSnapshot {
      * @param bytesRead the cumulative bytes read
      * @param bytesWritten the cumulative bytes written
      * @param customMetrics application-specific metrics, or null for none
-     * @throws IllegalArgumentException if any metric value is negative
+     * @throws IllegalArgumentException if any metric value is negative or customMetrics contains null keys/values
      */
     public ResourceSnapshot(long timestamp, long cpuTimeNanos, long heapUsedBytes,
                           int threadCount, long bytesRead, long bytesWritten,
@@ -74,8 +74,22 @@ public class ResourceSnapshot {
         this.threadCount = threadCount;
         this.bytesRead = bytesRead;
         this.bytesWritten = bytesWritten;
-        this.customMetrics = customMetrics != null ?
-                new HashMap<>(customMetrics) : Collections.emptyMap();
+
+        // Validate and copy customMetrics
+        if (customMetrics != null) {
+            for (Map.Entry<String, Object> entry : customMetrics.entrySet()) {
+                if (entry.getKey() == null) {
+                    throw new IllegalArgumentException("customMetrics cannot contain null keys");
+                }
+                if (entry.getValue() == null) {
+                    throw new IllegalArgumentException(
+                        "customMetrics cannot contain null values (key: " + entry.getKey() + ")");
+                }
+            }
+            this.customMetrics = new HashMap<>(customMetrics);
+        } else {
+            this.customMetrics = Collections.emptyMap();
+        }
     }
 
     /**
