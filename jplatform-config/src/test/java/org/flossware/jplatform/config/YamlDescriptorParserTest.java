@@ -239,4 +239,79 @@ class YamlDescriptorParserTest {
         assertEquals(2, descriptor.getProperties().size());
         assertTrue(descriptor.getProperties().containsKey("db.url"));
     }
+
+    @Test
+    void testParseFileIsDirectory(@TempDir Path tempDir) {
+        // Create a directory instead of a file
+        Path dirPath = tempDir.resolve("test-dir");
+        assertDoesNotThrow(() -> Files.createDirectory(dirPath));
+
+        // Attempting to parse a directory should throw ParseException
+        ParseException exception = assertThrows(ParseException.class, () -> {
+            parser.parseFile(dirPath);
+        });
+        assertTrue(exception.getMessage().contains("not a regular file"));
+    }
+
+    @Test
+    void testParseFileNotReadable(@TempDir Path tempDir) throws IOException {
+        // Create a file and make it not readable
+        Path filePath = tempDir.resolve("unreadable.yaml");
+        Files.writeString(filePath, "applicationId: test\nmainClass: Test\nclasspathEntries:\n  - file:///test.jar\n");
+
+        // Make file unreadable
+        assertTrue(filePath.toFile().setReadable(false));
+
+        try {
+            // Attempting to parse unreadable file should throw ParseException
+            ParseException exception = assertThrows(ParseException.class, () -> {
+                parser.parseFile(filePath);
+            });
+            assertTrue(exception.getMessage().contains("not readable"));
+        } finally {
+            // Restore permissions for cleanup
+            filePath.toFile().setReadable(true);
+        }
+    }
+
+    @Test
+    void testParseFileNullApplicationId(@TempDir Path tempDir) throws IOException {
+        // Create YAML without applicationId
+        String yaml = "name: Test Application\n" +
+                "mainClass: com.example.TestApp\n" +
+                "classpathEntries:\n" +
+                "  - file:///app.jar\n";
+
+        Path filePath = tempDir.resolve("no-appid.yaml");
+        Files.writeString(filePath, yaml);
+
+        // Should throw ParseException for missing applicationId
+        ParseException exception = assertThrows(ParseException.class, () -> {
+            parser.parseFile(filePath);
+        });
+        assertTrue(exception.getMessage().contains("applicationId is required"));
+    }
+
+    @Test
+    void testParseStreamNullApplicationId() {
+        // Create YAML without applicationId
+        String yaml = "name: Test Application\n" +
+                "mainClass: com.example.TestApp\n" +
+                "classpathEntries:\n" +
+                "  - file:///app.jar\n";
+
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(yaml.getBytes());
+
+        // Should throw ParseException for missing applicationId
+        ParseException exception = assertThrows(ParseException.class, () -> {
+            parser.parse(inputStream);
+        });
+        assertTrue(exception.getMessage().contains("applicationId is required"));
+    }
+
+    @Test
+    void testGetObjectMapper() {
+        // Test the protected getObjectMapper method (exposed for testing)
+        assertNotNull(parser.getObjectMapper());
+    }
 }
