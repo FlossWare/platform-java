@@ -283,7 +283,7 @@ public class PlatformConfig {
 
                 case "--port":
                     if (i + 1 < args.length) {
-                        api.setPort(Integer.parseInt(args[++i]));
+                        api.setPort(parsePort(args[++i], "--port"));
                         api.setEnabled(true);
                     }
                     break;
@@ -294,7 +294,7 @@ public class PlatformConfig {
 
                 case "--jmx-port":
                     if (i + 1 < args.length) {
-                        metrics.getJmx().setPort(Integer.parseInt(args[++i]));
+                        metrics.getJmx().setPort(parsePort(args[++i], "--jmx-port"));
                         metrics.getJmx().setEnabled(true);
                     }
                     break;
@@ -305,7 +305,7 @@ public class PlatformConfig {
 
                 case "--prometheus-port":
                     if (i + 1 < args.length) {
-                        metrics.getPrometheus().setPort(Integer.parseInt(args[++i]));
+                        metrics.getPrometheus().setPort(parsePort(args[++i], "--prometheus-port"));
                         metrics.getPrometheus().setEnabled(true);
                     }
                     break;
@@ -324,6 +324,30 @@ public class PlatformConfig {
                     }
                     break;
             }
+        }
+    }
+
+    /**
+     * Parses and validates a port number from command-line argument.
+     *
+     * @param value the port number string
+     * @param argName the argument name for error messages
+     * @return the validated port number
+     * @throws IllegalArgumentException if port is invalid
+     */
+    private int parsePort(String value, String argName) {
+        try {
+            int port = Integer.parseInt(value);
+            if (port < 1 || port > 65535) {
+                throw new IllegalArgumentException(
+                    String.format("Invalid port for %s: %d. Must be between 1 and 65535.",
+                        argName, port));
+            }
+            return port;
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException(
+                String.format("Invalid port for %s: '%s'. Must be a number between 1 and 65535.",
+                    argName, value));
         }
     }
 }

@@ -363,6 +363,17 @@ public class PlatformLauncher {
 
         while (running) {
             System.out.print("\njplatform> ");
+            System.out.flush();
+
+            // Check if input is available (handles EOF/closed stdin)
+            if (!scanner.hasNextLine()) {
+                logger.info("Standard input closed, entering server mode");
+                System.out.println("\nNo interactive console available. Platform running in server mode.");
+                System.out.println("Use REST API or web console to manage applications.");
+                System.out.println("Press Ctrl+C to shutdown.");
+                break;
+            }
+
             String input = scanner.nextLine().trim();
 
             if (input.isEmpty()) {
@@ -382,6 +393,16 @@ public class PlatformLauncher {
         }
 
         scanner.close();
+
+        // If console exited due to EOF, keep platform running in server mode
+        if (running) {
+            try {
+                Thread.currentThread().join();
+            } catch (InterruptedException e) {
+                logger.info("Platform interrupted, shutting down...");
+                handleExit();
+            }
+        }
     }
 
     private void printWelcome() {
@@ -645,13 +666,24 @@ public class PlatformLauncher {
 
         System.out.println("\nApplication: " + appId);
         System.out.println("  State: " + context.getState());
-        System.out.println("  Thread Pool: " + context.getThreadPool().getStats());
 
-        ResourceSnapshot snapshot = context.getResourceMonitor().getCurrentSnapshot();
-        System.out.println("  Resources:");
-        System.out.println("    CPU Time: " + (snapshot.getCpuTimeNanos() / 1_000_000_000.0) + "s");
-        System.out.println("    Heap Used: " + (snapshot.getHeapUsedBytes() / 1024 / 1024) + " MB");
-        System.out.println("    Thread Count: " + snapshot.getThreadCount());
+        // Check if thread pool is available
+        if (context.getThreadPool() != null) {
+            System.out.println("  Thread Pool: " + context.getThreadPool().getStats());
+        } else {
+            System.out.println("  Thread Pool: Not configured");
+        }
+
+        // Check if resource monitoring is available
+        if (context.getResourceMonitor() != null) {
+            ResourceSnapshot snapshot = context.getResourceMonitor().getCurrentSnapshot();
+            System.out.println("  Resources:");
+            System.out.println("    CPU Time: " + (snapshot.getCpuTimeNanos() / 1_000_000_000.0) + "s");
+            System.out.println("    Heap Used: " + (snapshot.getHeapUsedBytes() / 1024 / 1024) + " MB");
+            System.out.println("    Thread Count: " + snapshot.getThreadCount());
+        } else {
+            System.out.println("  Resources: Monitoring not enabled");
+        }
     }
 
     private void handleExit() {
