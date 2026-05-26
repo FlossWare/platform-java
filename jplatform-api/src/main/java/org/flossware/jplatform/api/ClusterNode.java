@@ -23,7 +23,7 @@ public class ClusterNode {
      * @param port the node port
      * @param state the node state
      * @param lastHeartbeat the last heartbeat timestamp
-     * @throws IllegalArgumentException if nodeId or address is null/empty, or port is invalid
+     * @throws IllegalArgumentException if nodeId or address is null/empty, port is invalid, or lastHeartbeat is negative
      * @throws NullPointerException if state is null
      */
     public ClusterNode(String nodeId, String address, int port, NodeState state, long lastHeartbeat) {
@@ -35,6 +35,9 @@ public class ClusterNode {
         }
         if (port < 1 || port > 65535) {
             throw new IllegalArgumentException("Port must be between 1 and 65535, got: " + port);
+        }
+        if (lastHeartbeat < 0) {
+            throw new IllegalArgumentException("lastHeartbeat cannot be negative: " + lastHeartbeat);
         }
 
         this.nodeId = nodeId;
