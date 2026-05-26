@@ -54,7 +54,7 @@ public final class ApplicationMetricsCollector {
      * Includes resource metrics, thread pool stats, and application state.
      *
      * @param context the application context to collect metrics from
-     * @return formatted Prometheus metrics text, or empty string if collection fails
+     * @return formatted Prometheus metrics text, or error metric if collection fails
      */
     public static String collectMetrics(ApplicationContext context) {
         try {
@@ -102,7 +102,11 @@ public final class ApplicationMetricsCollector {
         } catch (Exception e) {
             logger.error("Failed to collect metrics for application {}: {}",
                     context.getApplicationId(), e.getMessage(), e);
-            return "";
+
+            // Return error metric so Prometheus can alert on collection failures
+            String appId = context.getApplicationId();
+            return "# ERROR: Failed to collect metrics: " + e.getMessage() + "\n" +
+                   "jplatform_metrics_collection_errors_total{app_id=\"" + appId + "\"} 1\n";
         }
     }
 
