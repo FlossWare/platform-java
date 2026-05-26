@@ -82,6 +82,8 @@ public class JmsMessageBus implements MessageBus, AutoCloseable {
     private static final Logger logger = LoggerFactory.getLogger(JmsMessageBus.class);
     private static final String SOURCE_APP_PROPERTY = "sourceApplicationId";
     private static final String HEADERS_PROPERTY = "platformHeaders";
+    private static final String MESSAGE_ID_PROPERTY = "platformMessageId";
+    private static final String TIMESTAMP_PROPERTY = "platformTimestamp";
 
     private final JmsConfig config;
     private final ConnectionFactory connectionFactory;
@@ -155,9 +157,10 @@ public class JmsMessageBus implements MessageBus, AutoCloseable {
                     // Create bytes message
                     BytesMessage jmsMessage = publishSession.createBytesMessage();
 
-                    // Set JMS standard properties
-                    jmsMessage.setJMSMessageID(message.getId());
-                    jmsMessage.setJMSTimestamp(message.getTimestamp());
+                    // Store platform message ID and timestamp as custom properties
+                    // (Don't call setJMSMessageID/setJMSTimestamp - those are provider-only methods)
+                    jmsMessage.setStringProperty(MESSAGE_ID_PROPERTY, message.getId());
+                    jmsMessage.setLongProperty(TIMESTAMP_PROPERTY, message.getTimestamp());
 
                     // Set platform-specific properties
                     if (message.getSourceApplicationId() != null) {
@@ -355,9 +358,17 @@ public class JmsMessageBus implements MessageBus, AutoCloseable {
 
         BytesMessage bytesMessage = (BytesMessage) jmsMessage;
 
-        // Read message ID and timestamp
-        String id = jmsMessage.getJMSMessageID();
-        long timestamp = jmsMessage.getJMSTimestamp();
+        // Read platform message ID and timestamp from custom properties
+        String id = jmsMessage.getStringProperty(MESSAGE_ID_PROPERTY);
+        long timestamp = jmsMessage.getLongProperty(TIMESTAMP_PROPERTY);
+
+        // If not present (backward compatibility with old messages), fall back to JMS provider values
+        if (id == null) {
+            id = jmsMessage.getJMSMessageID();
+        }
+        if (timestamp == 0) {
+            timestamp = jmsMessage.getJMSTimestamp();
+        }
 
         // Read source application ID
         String sourceAppId = jmsMessage.getStringProperty(SOURCE_APP_PROPERTY);

@@ -136,8 +136,8 @@ class JmsMessageBusTest {
         verify(publishSession).createTopic("test-topic");
         verify(publishSession).createProducer(topic);
         verify(publishSession).createBytesMessage();
-        verify(bytesMessage).setJMSMessageID(message.getId());
-        verify(bytesMessage).setJMSTimestamp(message.getTimestamp());
+        verify(bytesMessage).setStringProperty("platformMessageId", message.getId());
+        verify(bytesMessage).setLongProperty("platformTimestamp", message.getTimestamp());
         verify(bytesMessage).setStringProperty("sourceApplicationId", "app1");
         verify(bytesMessage).writeBytes("Hello".getBytes());
         verify(producer).send(bytesMessage);
