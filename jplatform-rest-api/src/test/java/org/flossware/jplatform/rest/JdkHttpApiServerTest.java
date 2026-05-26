@@ -116,13 +116,12 @@ class JdkHttpApiServerTest {
 
     @Test
     void testInvalidPortThrowsException() {
-        ApiServerConfig config = ApiServerConfig.builder()
-                .port(99999) // Invalid port
-                .build();
-
-        server = new JdkHttpApiServer(config, mockManager);
-
-        assertThrows(Exception.class, () -> server.start());
+        // Port 99999 is invalid (must be between 0 and 65535)
+        assertThrows(IllegalArgumentException.class, () -> {
+            ApiServerConfig.builder()
+                    .port(99999)
+                    .build();
+        });
     }
 
     @Test

@@ -282,7 +282,7 @@ class ApiAuthFilterTest {
         assertEquals(401, ((Number) responseMap.get("status")).intValue());
 
         Headers responseHeaders = exchange.getResponseHeaders();
-        verify(responseHeaders).set("Content-Type", "application/json");
+        verify(responseHeaders).set("Content-Type", "application/json; charset=UTF-8");
     }
 
     @Test

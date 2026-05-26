@@ -400,7 +400,7 @@ class ApplicationApiHandlerTest {
         handler.handle(exchange);
 
         Headers headers = exchange.getResponseHeaders();
-        verify(headers).set("Content-Type", "application/json");
+        verify(headers).set("Content-Type", "application/json; charset=UTF-8");
     }
 
     @Test

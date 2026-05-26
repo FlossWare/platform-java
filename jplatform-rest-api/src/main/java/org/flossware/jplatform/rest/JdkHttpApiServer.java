@@ -305,20 +305,27 @@ public class JdkHttpApiServer implements PlatformApiServer {
             return;
         }
 
-        // Get the Origin header from the request
-        String requestOrigin = requestHeaders.getFirst("Origin");
-
-        if (requestOrigin != null && allowedOrigins.contains(requestOrigin)) {
-            // Echo back the origin only if it's in the allowed set
-            responseHeaders.add("Access-Control-Allow-Origin", requestOrigin);
-            // Vary header is important for proper caching of CORS responses
-            responseHeaders.add("Vary", "Origin");
-            logger.debug("Accepting CORS request from allowed origin: {}", requestOrigin);
+        // Check if wildcard "*" is in allowed origins
+        if (allowedOrigins.contains("*")) {
+            // Allow all origins
+            responseHeaders.add("Access-Control-Allow-Origin", "*");
+            logger.debug("CORS wildcard enabled, allowing all origins");
         } else {
-            // Origin not allowed or not provided - don't add CORS header
-            // Browser will block the response
-            if (requestOrigin != null) {
-                logger.debug("Rejecting CORS request from disallowed origin: {}", requestOrigin);
+            // Get the Origin header from the request
+            String requestOrigin = requestHeaders.getFirst("Origin");
+
+            if (requestOrigin != null && allowedOrigins.contains(requestOrigin)) {
+                // Echo back the origin only if it's in the allowed set
+                responseHeaders.add("Access-Control-Allow-Origin", requestOrigin);
+                // Vary header is important for proper caching of CORS responses
+                responseHeaders.add("Vary", "Origin");
+                logger.debug("Accepting CORS request from allowed origin: {}", requestOrigin);
+            } else {
+                // Origin not allowed or not provided - don't add CORS header
+                // Browser will block the response
+                if (requestOrigin != null) {
+                    logger.debug("Rejecting CORS request from disallowed origin: {}", requestOrigin);
+                }
             }
         }
 
