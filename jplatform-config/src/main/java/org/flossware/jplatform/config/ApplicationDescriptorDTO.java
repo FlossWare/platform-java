@@ -225,6 +225,9 @@ public class ApplicationDescriptorDTO {
 
             if (filePermissions != null) {
                 for (FilePermissionDTO fp : filePermissions) {
+                    if (fp == null) {
+                        throw new IllegalArgumentException("File permission entry cannot be null");
+                    }
                     if (fp.path == null || fp.path.trim().isEmpty()) {
                         throw new IllegalArgumentException("File permission path cannot be null or empty");
                     }
@@ -237,6 +240,9 @@ public class ApplicationDescriptorDTO {
 
             if (socketPermissions != null) {
                 for (SocketPermissionDTO sp : socketPermissions) {
+                    if (sp == null) {
+                        throw new IllegalArgumentException("Socket permission entry cannot be null");
+                    }
                     if (sp.host == null || sp.host.trim().isEmpty()) {
                         throw new IllegalArgumentException("Socket permission host cannot be null or empty");
                     }
