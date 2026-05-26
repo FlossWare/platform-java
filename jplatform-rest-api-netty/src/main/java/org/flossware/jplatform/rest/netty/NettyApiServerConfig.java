@@ -182,12 +182,21 @@ public class NettyApiServerConfig {
         /**
          * Sets the maximum content length.
          *
-         * @param maxContentLength the max content length in bytes (must be at least 1024)
+         * @param maxContentLength the max content length in bytes (must be between 1024 and 100MB)
          * @return this builder for chaining
+         * @throws IllegalArgumentException if maxContentLength is out of range
          */
         public Builder maxContentLength(int maxContentLength) {
             if (maxContentLength < 1024) {
                 throw new IllegalArgumentException("Max content length must be at least 1024 bytes");
+            }
+            int MAX_SAFE_CONTENT_LENGTH = 100 * 1024 * 1024;  // 100MB
+            if (maxContentLength > MAX_SAFE_CONTENT_LENGTH) {
+                throw new IllegalArgumentException(
+                    "Max content length (" + maxContentLength +
+                    " bytes) exceeds maximum allowed (100MB). " +
+                    "Use streaming for larger payloads."
+                );
             }
             this.maxContentLength = maxContentLength;
             return this;

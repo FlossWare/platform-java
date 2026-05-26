@@ -110,6 +110,9 @@ public class NettyApiServer implements PlatformApiServer {
         // Validate configuration before creating resources
         String host = config.getHost();
         int port = config.getPort();
+        int bossThreads = config.getBossThreads();
+        int workerThreads = config.getWorkerThreads();
+        int maxContentLength = config.getMaxContentLength();
 
         if (host == null || host.trim().isEmpty()) {
             throw new ServerStartupException("Host must not be null or empty", port, null);
@@ -117,11 +120,32 @@ public class NettyApiServer implements PlatformApiServer {
         if (port < 0 || port > 65535) {
             throw new ServerStartupException("Port must be between 0 and 65535, got: " + port, port, null);
         }
+        if (bossThreads < 1) {
+            throw new ServerStartupException(
+                "Boss thread count must be at least 1, configured: " + bossThreads,
+                port,
+                null
+            );
+        }
+        if (workerThreads < 0) {
+            throw new ServerStartupException(
+                "Worker thread count must be at least 0 (0 = auto-detect), configured: " + workerThreads,
+                port,
+                null
+            );
+        }
+        if (maxContentLength <= 0) {
+            throw new ServerStartupException(
+                "Max content length must be positive, configured: " + maxContentLength,
+                port,
+                null
+            );
+        }
 
         try {
-            bossGroup = new NioEventLoopGroup(config.getBossThreads());
-            workerGroup = config.getWorkerThreads() > 0
-                ? new NioEventLoopGroup(config.getWorkerThreads())
+            bossGroup = new NioEventLoopGroup(bossThreads);
+            workerGroup = workerThreads > 0
+                ? new NioEventLoopGroup(workerThreads)
                 : new NioEventLoopGroup();
 
             ServerBootstrap bootstrap = new ServerBootstrap();
@@ -132,21 +156,67 @@ public class NettyApiServer implements PlatformApiServer {
                     protected void initChannel(SocketChannel ch) {
                         ChannelPipeline pipeline = ch.pipeline();
                         pipeline.addLast(new HttpServerCodec());
-                        pipeline.addLast(new HttpObjectAggregator(config.getMaxContentLength()));
+                        pipeline.addLast(new HttpObjectAggregator(maxContentLength));
                         pipeline.addLast(new HttpRequestHandler(routes));
                     }
                 })
                 .option(ChannelOption.SO_BACKLOG, config.getBacklog())
                 .childOption(ChannelOption.SO_KEEPALIVE, config.isKeepAlive());
 
-            ChannelFuture future = bootstrap.bind(config.getHost(), config.getPort()).sync();
-            serverChannel = future.channel();
+            // Bind with timeout to prevent indefinite hanging
+            ChannelFuture bindFuture = bootstrap.bind(config.getHost(), config.getPort());
+
+            // Wait for bind to complete with 30-second timeout
+            if (!bindFuture.await(30, java.util.concurrent.TimeUnit.SECONDS)) {
+                // Timeout waiting for bind
+                throw new ServerStartupException(
+                    "Timeout waiting for server to bind to " + config.getHost() + ":" + config.getPort(),
+                    config.getPort(),
+                    null
+                );
+            }
+
+            // Check if bind was successful
+            if (!bindFuture.isSuccess()) {
+                throw new ServerStartupException(
+                    "Failed to bind server to " + config.getHost() + ":" + config.getPort(),
+                    config.getPort(),
+                    bindFuture.cause()
+                );
+            }
+
+            serverChannel = bindFuture.channel();
             running = true;
 
             logger.info("Netty API server started on {}:{}", config.getHost(), config.getPort());
+        } catch (ServerStartupException e) {
+            // Cleanup resources on startup failure
+            cleanupResources();
+            throw e;
         } catch (Exception e) {
             logger.error("Failed to start Netty API server", e);
+            cleanupResources();
             throw new ServerStartupException("Failed to start server", config.getPort(), e);
+        }
+    }
+
+    /**
+     * Cleans up resources after a failed start attempt.
+     */
+    private void cleanupResources() {
+        if (workerGroup != null) {
+            try {
+                workerGroup.shutdownGracefully();
+            } catch (Exception ex) {
+                logger.warn("Failed to shutdown worker group during cleanup", ex);
+            }
+        }
+        if (bossGroup != null) {
+            try {
+                bossGroup.shutdownGracefully();
+            } catch (Exception ex) {
+                logger.warn("Failed to shutdown boss group during cleanup", ex);
+            }
         }
     }
 
