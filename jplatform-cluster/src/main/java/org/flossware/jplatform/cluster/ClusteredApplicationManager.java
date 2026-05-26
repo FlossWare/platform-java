@@ -133,9 +133,14 @@ public class ClusteredApplicationManager extends ApplicationManager {
         if (clusterManager != null && clusterManager.isJoined()) {
             logger.info("[{}] Deploying application in cluster mode", appId);
 
-            // Write descriptor to cluster state
-            stateStore.putApplicationDescriptor(appId, descriptor);
-            stateStore.putApplicationState(appId, ApplicationState.DEPLOYED);
+            // Write descriptor to cluster state - must succeed before proceeding
+            try {
+                stateStore.putApplicationDescriptor(appId, descriptor);
+                stateStore.putApplicationState(appId, ApplicationState.DEPLOYED);
+            } catch (Exception e) {
+                logger.error("[{}] Failed to update cluster state during deploy", appId, e);
+                throw new Exception("Failed to update cluster state: " + e.getMessage(), e);
+            }
 
             // If leader, try to assign to a node
             if (scheduler != null) {
@@ -189,7 +194,13 @@ public class ClusteredApplicationManager extends ApplicationManager {
             super.start(applicationId);
 
             // Update cluster state
-            stateStore.putApplicationState(applicationId, ApplicationState.RUNNING);
+            try {
+                stateStore.putApplicationState(applicationId, ApplicationState.RUNNING);
+            } catch (Exception e) {
+                logger.error("[{}] Failed to update cluster state to RUNNING", applicationId, e);
+                // Application is already started locally, but cluster state is inconsistent
+                throw new Exception("Application started but failed to update cluster state: " + e.getMessage(), e);
+            }
 
         } else {
             // Standalone mode
@@ -218,7 +229,13 @@ public class ClusteredApplicationManager extends ApplicationManager {
             super.stop(applicationId);
 
             // Update cluster state
-            stateStore.putApplicationState(applicationId, ApplicationState.STOPPED);
+            try {
+                stateStore.putApplicationState(applicationId, ApplicationState.STOPPED);
+            } catch (Exception e) {
+                logger.error("[{}] Failed to update cluster state to STOPPED", applicationId, e);
+                // Application is already stopped locally, but cluster state is inconsistent
+                throw new Exception("Application stopped but failed to update cluster state: " + e.getMessage(), e);
+            }
 
         } else {
             // Standalone mode
@@ -246,7 +263,12 @@ public class ClusteredApplicationManager extends ApplicationManager {
             // If leader, remove from scheduler and cluster state
             if (clusterManager.isLeader()) {
                 scheduler.unassignApplication(applicationId);
-                stateStore.putApplicationState(applicationId, ApplicationState.UNDEPLOYED);
+                try {
+                    stateStore.putApplicationState(applicationId, ApplicationState.UNDEPLOYED);
+                } catch (Exception e) {
+                    logger.error("[{}] Failed to update cluster state to UNDEPLOYED", applicationId, e);
+                    throw new Exception("Failed to update cluster state during undeploy: " + e.getMessage(), e);
+                }
                 logger.info("[{}] Leader removed application from cluster", applicationId);
             }
 
