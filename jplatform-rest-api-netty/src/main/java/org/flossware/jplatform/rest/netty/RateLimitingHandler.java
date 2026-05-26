@@ -65,8 +65,9 @@ class RateLimitingHandler extends ChannelInboundHandlerAdapter {
 
         // Check per-IP rate limit
         if (perIpBuckets != null) {
-            InetSocketAddress remoteAddress = (InetSocketAddress) ctx.channel().remoteAddress();
-            if (remoteAddress != null) {
+            java.net.SocketAddress socketAddress = ctx.channel().remoteAddress();
+            if (socketAddress instanceof InetSocketAddress) {
+                InetSocketAddress remoteAddress = (InetSocketAddress) socketAddress;
                 InetAddress clientIp = remoteAddress.getAddress();
                 TokenBucket ipBucket = perIpBuckets.computeIfAbsent(
                     clientIp,
@@ -79,6 +80,7 @@ class RateLimitingHandler extends ChannelInboundHandlerAdapter {
                     return;
                 }
             }
+            // If not InetSocketAddress (e.g., EmbeddedSocketAddress in tests), skip per-IP limiting
         }
 
         // Rate limits passed, forward to next handler
