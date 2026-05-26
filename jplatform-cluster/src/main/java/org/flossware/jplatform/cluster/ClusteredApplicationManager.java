@@ -133,38 +133,76 @@ public class ClusteredApplicationManager extends ApplicationManager {
         if (clusterManager != null && clusterManager.isJoined()) {
             logger.info("[{}] Deploying application in cluster mode", appId);
 
-            // Write descriptor to cluster state - must succeed before proceeding
+            boolean clusterStateWritten = false;
+            boolean assigned = false;
+            boolean deployedLocally = false;
+
             try {
+                // Step 1: Write descriptor to cluster state
                 stateStore.putApplicationDescriptor(appId, descriptor);
                 stateStore.putApplicationState(appId, ApplicationState.DEPLOYED);
-            } catch (Exception e) {
-                logger.error("[{}] Failed to update cluster state during deploy", appId, e);
-                throw new Exception("Failed to update cluster state: " + e.getMessage(), e);
-            }
+                clusterStateWritten = true;
 
-            // If leader, try to assign to a node
-            if (scheduler != null) {
-                try {
-                    if (clusterManager.isLeader()) {
-                        String assignedNode = scheduler.assignApplication(appId);
-                        logger.info("[{}] Leader assigned application to node: {}", appId, assignedNode);
+                // Step 2: If leader, assign to a node
+                if (scheduler != null) {
+                    try {
+                        if (clusterManager.isLeader()) {
+                            String assignedNode = scheduler.assignApplication(appId);
+                            assigned = true;
+                            logger.info("[{}] Leader assigned application to node: {}", appId, assignedNode);
+                        }
+                    } catch (IllegalStateException e) {
+                        // Lost leadership during assignment, log and continue
+                        logger.debug("[{}] Lost leadership during assignment: {}", appId, e.getMessage());
                     }
-                } catch (IllegalStateException e) {
-                    // Lost leadership during assignment, log and continue
-                    logger.debug("[{}] Lost leadership during assignment: {}", appId, e.getMessage());
+
+                    // Step 3: Check if assigned to local node and deploy locally
+                    if (scheduler.isAssignedToLocalNode(appId)) {
+                        logger.info("[{}] Application assigned to local node, deploying locally", appId);
+                        super.deploy(descriptor);
+                        deployedLocally = true;
+                    } else {
+                        logger.info("[{}] Application assigned to another node, skipping local deployment", appId);
+                    }
+                } else {
+                    // No scheduler available, deploy locally
+                    logger.info("[{}] No scheduler available, deploying locally", appId);
+                    super.deploy(descriptor);
+                    deployedLocally = true;
                 }
 
-                // Check if assigned to local node regardless of leadership
-                if (scheduler.isAssignedToLocalNode(appId)) {
-                    logger.info("[{}] Application assigned to local node, deploying locally", appId);
-                    super.deploy(descriptor);
-                } else {
-                    logger.info("[{}] Application assigned to another node, skipping local deployment", appId);
+            } catch (Exception e) {
+                logger.error("[{}] Deployment failed, initiating rollback", appId, e);
+
+                // Rollback in reverse order
+                if (deployedLocally) {
+                    try {
+                        super.undeploy(appId);
+                        logger.info("[{}] Rolled back local deployment", appId);
+                    } catch (Exception rollbackEx) {
+                        logger.error("[{}] Failed to rollback local deployment", appId, rollbackEx);
+                    }
                 }
-            } else if (scheduler == null) {
-                // No scheduler available, deploy locally
-                logger.info("[{}] No scheduler available, deploying locally", appId);
-                super.deploy(descriptor);
+
+                if (assigned && clusterManager.isLeader()) {
+                    try {
+                        scheduler.unassignApplication(appId);
+                        logger.info("[{}] Rolled back application assignment", appId);
+                    } catch (Exception rollbackEx) {
+                        logger.error("[{}] Failed to rollback assignment", appId, rollbackEx);
+                    }
+                }
+
+                if (clusterStateWritten) {
+                    try {
+                        stateStore.putApplicationState(appId, ApplicationState.FAILED);
+                        logger.info("[{}] Updated cluster state to FAILED", appId);
+                    } catch (Exception rollbackEx) {
+                        logger.error("[{}] Failed to update cluster state to FAILED", appId, rollbackEx);
+                    }
+                }
+
+                throw new Exception("Deployment failed and rollback completed: " + e.getMessage(), e);
             }
         } else {
             // Standalone mode
@@ -254,22 +292,54 @@ public class ClusteredApplicationManager extends ApplicationManager {
     @Override
     public synchronized void undeploy(String applicationId) throws Exception {
         if (clusterManager != null && clusterManager.isJoined() && scheduler != null) {
-            // Only undeploy locally if assigned to this node
-            if (scheduler.isAssignedToLocalNode(applicationId)) {
-                logger.info("[{}] Undeploying application from assigned node", applicationId);
-                super.undeploy(applicationId);
-            }
+            boolean undeployedLocally = false;
+            boolean unassigned = false;
+            ApplicationDescriptor descriptor = null;
 
-            // If leader, remove from scheduler and cluster state
-            if (clusterManager.isLeader()) {
-                scheduler.unassignApplication(applicationId);
-                try {
-                    stateStore.putApplicationState(applicationId, ApplicationState.UNDEPLOYED);
-                } catch (Exception e) {
-                    logger.error("[{}] Failed to update cluster state to UNDEPLOYED", applicationId, e);
-                    throw new Exception("Failed to update cluster state during undeploy: " + e.getMessage(), e);
+            try {
+                // Save descriptor for potential rollback
+                if (scheduler.isAssignedToLocalNode(applicationId)) {
+                    descriptor = stateStore.getApplicationDescriptor(applicationId);
                 }
-                logger.info("[{}] Leader removed application from cluster", applicationId);
+
+                // Step 1: Undeploy locally if assigned to this node
+                if (scheduler.isAssignedToLocalNode(applicationId)) {
+                    logger.info("[{}] Undeploying application from assigned node", applicationId);
+                    super.undeploy(applicationId);
+                    undeployedLocally = true;
+                }
+
+                // Step 2: If leader, remove from scheduler and cluster state
+                if (clusterManager.isLeader()) {
+                    scheduler.unassignApplication(applicationId);
+                    unassigned = true;
+                    stateStore.putApplicationState(applicationId, ApplicationState.UNDEPLOYED);
+                    logger.info("[{}] Leader removed application from cluster", applicationId);
+                }
+
+            } catch (Exception e) {
+                logger.error("[{}] Undeploy failed, initiating rollback", applicationId, e);
+
+                // Rollback in reverse order
+                if (unassigned && clusterManager.isLeader() && descriptor != null) {
+                    try {
+                        scheduler.assignApplication(applicationId);
+                        logger.info("[{}] Rolled back application unassignment", applicationId);
+                    } catch (Exception rollbackEx) {
+                        logger.error("[{}] Failed to rollback unassignment", applicationId, rollbackEx);
+                    }
+                }
+
+                if (undeployedLocally && descriptor != null) {
+                    try {
+                        super.deploy(descriptor);
+                        logger.info("[{}] Rolled back local undeploy by redeploying", applicationId);
+                    } catch (Exception rollbackEx) {
+                        logger.error("[{}] Failed to rollback local undeploy", applicationId, rollbackEx);
+                    }
+                }
+
+                throw new Exception("Undeploy failed and rollback attempted: " + e.getMessage(), e);
             }
 
         } else {
