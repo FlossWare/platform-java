@@ -297,4 +297,138 @@ class S3VolumeManagerTest {
 
         verify(s3Client, times(2)).listObjectsV2(any(ListObjectsV2Request.class));
     }
+
+    @Test
+    void testDownloadFileSuccess() throws IOException {
+        S3VolumeManager manager = new S3VolumeManager(config, volumeMounts, s3Client);
+
+        Path volumePath = manager.getVolumePath("data");
+        Path testFile = volumePath.resolve("downloaded.txt");
+
+        when(s3Client.getObject(any(GetObjectRequest.class), any(Path.class)))
+            .thenReturn(null); // Mocking void behavior
+
+        manager.downloadFile("data", "downloaded.txt");
+
+        verify(s3Client).getObject(any(GetObjectRequest.class), any(Path.class));
+    }
+
+    @Test
+    void testDownloadFileS3Exception() {
+        S3VolumeManager manager = new S3VolumeManager(config, volumeMounts, s3Client);
+
+        when(s3Client.getObject(any(GetObjectRequest.class), any(Path.class)))
+            .thenThrow(S3Exception.builder().message("S3 error").build());
+
+        assertThrows(IOException.class, () ->
+            manager.downloadFile("data", "test.txt")
+        );
+    }
+
+    @Test
+    void testDownloadFileUndefinedVolume() {
+        S3VolumeManager manager = new S3VolumeManager(config, volumeMounts, s3Client);
+
+        assertThrows(IllegalArgumentException.class, () ->
+            manager.downloadFile("undefined", "test.txt")
+        );
+    }
+
+    @Test
+    void testUploadFileS3Exception() throws IOException {
+        S3VolumeManager manager = new S3VolumeManager(config, volumeMounts, s3Client);
+
+        Path volumePath = manager.getVolumePath("data");
+        Path testFile = volumePath.resolve("test.txt");
+        Files.writeString(testFile, "content");
+
+        when(s3Client.putObject(any(PutObjectRequest.class), any(RequestBody.class)))
+            .thenThrow(S3Exception.builder().message("S3 error").build());
+
+        assertThrows(IOException.class, () ->
+            manager.uploadFile("data", "test.txt")
+        );
+    }
+
+    @Test
+    void testUploadFileUndefinedVolume() {
+        S3VolumeManager manager = new S3VolumeManager(config, volumeMounts, s3Client);
+
+        assertThrows(IllegalArgumentException.class, () ->
+            manager.uploadFile("undefined", "test.txt")
+        );
+    }
+
+    // Note: start() method with actual S3Client creation cannot be easily unit tested
+    // as it requires real AWS SDK client building. The method is tested via
+    // integration tests or when S3Client is provided via constructor.
+
+    @Test
+    void testStartIdempotent() {
+        S3VolumeManager manager = new S3VolumeManager(config, volumeMounts, s3Client);
+
+        // First start - already initialized via constructor
+        // Second start should be no-op
+        assertDoesNotThrow(() -> manager.start());
+        assertDoesNotThrow(() -> manager.start());
+    }
+
+    @Test
+    void testCloseWhenNotInitialized() {
+        S3VolumeManager manager = new S3VolumeManager(config, volumeMounts);
+        assertDoesNotThrow(() -> manager.close());
+    }
+
+    @Test
+    void testGetVolumeUsageBytesWithS3Exception() {
+        S3VolumeManager manager = new S3VolumeManager(config, volumeMounts, s3Client);
+
+        when(s3Client.listObjectsV2(any(ListObjectsV2Request.class)))
+            .thenThrow(S3Exception.builder().message("S3 error").build());
+
+        assertThrows(IOException.class, () ->
+            manager.getVolumeUsageBytes("data")
+        );
+    }
+
+    @Test
+    void testGetVolumePathCreatesParentDirectories() {
+        S3VolumeManager manager = new S3VolumeManager(config, volumeMounts, s3Client);
+
+        // Get path twice - should return same cached path
+        Path path1 = manager.getVolumePath("data");
+        Path path2 = manager.getVolumePath("data");
+
+        assertSame(path1, path2);
+        assertTrue(Files.exists(path1));
+    }
+
+    @Test
+    void testIsPersistentForAllVolumes() {
+        S3VolumeManager manager = new S3VolumeManager(config, volumeMounts, s3Client);
+
+        assertTrue(manager.isPersistent("data"));
+        assertFalse(manager.isPersistent("cache"));
+        assertTrue(manager.isPersistent("logs"));
+    }
+
+    @Test
+    void testGetVolumesReturnsCopy() {
+        S3VolumeManager manager = new S3VolumeManager(config, volumeMounts, s3Client);
+
+        List<VolumeMount> volumes1 = manager.getVolumes();
+        List<VolumeMount> volumes2 = manager.getVolumes();
+
+        assertNotSame(volumes1, volumes2);
+        assertEquals(volumes1.size(), volumes2.size());
+    }
+
+    @Test
+    void testConstructorWithS3ClientSkipsInitialization() {
+        S3VolumeManager manager = new S3VolumeManager(config, volumeMounts, s3Client);
+
+        // Should be able to use immediately without calling start()
+        assertTrue(manager.volumeExists("data"));
+        assertSame(s3Client, manager.getS3Client());
+    }
 }
