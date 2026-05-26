@@ -120,8 +120,12 @@ public class JmsConfig {
          *
          * @param brokerUrl the broker URL (e.g., "tcp://localhost:61616")
          * @return this builder
+         * @throws IllegalArgumentException if brokerUrl is null or empty
          */
         public Builder brokerUrl(String brokerUrl) {
+            if (brokerUrl == null || brokerUrl.trim().isEmpty()) {
+                throw new IllegalArgumentException("brokerUrl cannot be null or empty");
+            }
             this.brokerUrl = brokerUrl;
             return this;
         }

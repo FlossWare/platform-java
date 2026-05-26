@@ -46,8 +46,24 @@ class JmsConfigTest {
     void testBuilder_nullBrokerUrl() {
         JmsConfig.Builder builder = JmsConfig.builder();
 
-        assertThrows(NullPointerException.class, builder::build,
-                "Should throw NullPointerException when brokerUrl is null");
+        assertThrows(IllegalArgumentException.class, () -> builder.brokerUrl(null),
+                "Should throw IllegalArgumentException when brokerUrl is null");
+    }
+
+    @Test
+    void testBuilder_emptyBrokerUrl() {
+        JmsConfig.Builder builder = JmsConfig.builder();
+
+        assertThrows(IllegalArgumentException.class, () -> builder.brokerUrl(""),
+                "Should throw IllegalArgumentException when brokerUrl is empty");
+    }
+
+    @Test
+    void testBuilder_whitespaceBrokerUrl() {
+        JmsConfig.Builder builder = JmsConfig.builder();
+
+        assertThrows(IllegalArgumentException.class, () -> builder.brokerUrl("   "),
+                "Should throw IllegalArgumentException when brokerUrl is whitespace");
     }
 
     @Test
