@@ -182,7 +182,7 @@ public class JmsMessageBus implements MessageBus, AutoCloseable {
                     producer.close();
                 }
             }
-        } catch (JMSException e) {
+        } catch (JMSException | IOException e) {
             logger.error("Failed to publish message to topic '{}'", topic, e);
             throw new RuntimeException("Failed to publish message", e);
         }
@@ -345,8 +345,10 @@ public class JmsMessageBus implements MessageBus, AutoCloseable {
      * @param topic the topic name
      * @return the platform message
      * @throws JMSException if an error occurs reading the message
+     * @throws IOException if header deserialization fails
+     * @throws ClassNotFoundException if the serialized header class cannot be found
      */
-    private Message fromJmsMessage(jakarta.jms.Message jmsMessage, String topic) throws JMSException {
+    private Message fromJmsMessage(jakarta.jms.Message jmsMessage, String topic) throws JMSException, IOException, ClassNotFoundException {
         if (!(jmsMessage instanceof BytesMessage)) {
             throw new IllegalArgumentException("Expected BytesMessage, got " + jmsMessage.getClass());
         }
@@ -395,15 +397,13 @@ public class JmsMessageBus implements MessageBus, AutoCloseable {
      *
      * @param headers the headers map
      * @return serialized headers
+     * @throws IOException if serialization fails
      */
-    private byte[] serializeHeaders(Map<String, Object> headers) {
+    private byte[] serializeHeaders(Map<String, Object> headers) throws IOException {
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
              ObjectOutputStream oos = new ObjectOutputStream(baos)) {
             oos.writeObject(new HashMap<>(headers));
             return baos.toByteArray();
-        } catch (IOException e) {
-            logger.error("Failed to serialize headers", e);
-            return new byte[0];
         }
     }
 
@@ -412,15 +412,14 @@ public class JmsMessageBus implements MessageBus, AutoCloseable {
      *
      * @param bytes the serialized headers
      * @return the headers map
+     * @throws IOException if deserialization fails
+     * @throws ClassNotFoundException if the serialized class cannot be found
      */
     @SuppressWarnings("unchecked")
-    private Map<String, Object> deserializeHeaders(byte[] bytes) {
+    private Map<String, Object> deserializeHeaders(byte[] bytes) throws IOException, ClassNotFoundException {
         try (ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
              ObjectInputStream ois = new ObjectInputStream(bais)) {
             return (Map<String, Object>) ois.readObject();
-        } catch (IOException | ClassNotFoundException e) {
-            logger.error("Failed to deserialize headers", e);
-            return new HashMap<>();
         }
     }
 

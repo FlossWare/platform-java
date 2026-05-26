@@ -565,4 +565,68 @@ class JmsMessageBusTest {
 
         assertEquals(1, latch.getCount()); // Handler should not have been called
     }
+
+    @Test
+    void testPublish_serializationFailure() throws JMSException {
+        messageBus = new JmsMessageBus(config, connectionFactory);
+
+        when(publishSession.createTopic("test-topic")).thenReturn(topic);
+        when(publishSession.createProducer(topic)).thenReturn(producer);
+        when(publishSession.createBytesMessage()).thenReturn(bytesMessage);
+
+        // Create headers with a non-serializable object
+        Map<String, Object> headers = new HashMap<>();
+        headers.put("badObject", new Object() {
+            @SuppressWarnings("unused")
+            private final java.io.OutputStream nonSerializable = new java.io.ByteArrayOutputStream();
+        });
+
+        Message message = Message.builder()
+                .topic("test-topic")
+                .sourceApplicationId("test-app")
+                .headers(headers)
+                .payload("test".getBytes())
+                .build();
+
+        // Should throw RuntimeException wrapping the IOException from serialization failure
+        RuntimeException exception = assertThrows(RuntimeException.class,
+                () -> messageBus.publish("test-topic", message));
+
+        assertTrue(exception.getMessage().contains("Failed to publish message"));
+    }
+
+    @Test
+    void testMessageHandling_deserializationFailure() throws JMSException {
+        messageBus = new JmsMessageBus(config, connectionFactory);
+
+        when(subscribeSession.createTopic("test-topic")).thenReturn(topic);
+        when(subscribeSession.createConsumer(topic)).thenReturn(consumer);
+
+        // Setup corrupted header bytes that will fail deserialization
+        when(bytesMessage.getJMSMessageID()).thenReturn("msg-123");
+        when(bytesMessage.getJMSTimestamp()).thenReturn(System.currentTimeMillis());
+        when(bytesMessage.getStringProperty("sourceApplicationId")).thenReturn("test-app");
+        when(bytesMessage.getObjectProperty("platformHeaders")).thenReturn(new byte[]{1, 2, 3}); // Corrupted data
+        when(bytesMessage.getBodyLength()).thenReturn(0L);
+
+        CountDownLatch latch = new CountDownLatch(1);
+        AtomicReference<Message> receivedMessage = new AtomicReference<>();
+
+        MessageHandler handler = message -> {
+            receivedMessage.set(message);
+            latch.countDown();
+        };
+
+        ArgumentCaptor<MessageListener> listenerCaptor = ArgumentCaptor.forClass(MessageListener.class);
+
+        messageBus.subscribe("test-topic", handler);
+
+        verify(consumer).setMessageListener(listenerCaptor.capture());
+
+        // Should handle the exception (logged but not thrown) and not deliver the message
+        assertDoesNotThrow(() -> listenerCaptor.getValue().onMessage(bytesMessage));
+
+        // Handler should not have been called due to deserialization failure
+        assertNull(receivedMessage.get());
+    }
 }
