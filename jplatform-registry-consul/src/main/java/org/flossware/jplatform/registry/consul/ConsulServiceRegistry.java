@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Consul-based implementation of ServiceRegistry.
@@ -57,7 +58,36 @@ public class ConsulServiceRegistry implements ServiceRegistry, AutoCloseable {
     private final AgentClient agentClient;
     private final KeyValueClient kvClient;
     private final Map<Class<?>, List<Object>> localServices;
-    private final Map<String, String> registeredServiceIds;
+    private final Map<ServiceKey, String> registeredServiceIds;
+
+    /**
+     * Composite key for tracking service registrations.
+     * Uses object identity to distinguish between different instances
+     * of the same implementation class registered for the same interface.
+     */
+    private static class ServiceKey {
+        private final Class<?> serviceInterface;
+        private final Object implementation;
+
+        ServiceKey(Class<?> serviceInterface, Object implementation) {
+            this.serviceInterface = serviceInterface;
+            this.implementation = implementation;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof ServiceKey)) return false;
+            ServiceKey that = (ServiceKey) o;
+            return serviceInterface.equals(that.serviceInterface) &&
+                   implementation == that.implementation;  // Identity comparison
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(serviceInterface, System.identityHashCode(implementation));
+        }
+    }
 
     /**
      * Constructs a new Consul service registry with the specified configuration.
@@ -131,12 +161,12 @@ public class ConsulServiceRegistry implements ServiceRegistry, AutoCloseable {
         logger.debug("Registering service: {} with implementation: {}",
             serviceInterface.getName(), implementation.getClass().getName());
 
-        // Add to local registry
-        localServices.computeIfAbsent(serviceInterface, k -> new ArrayList<>())
-            .add(implementation);
-
-        // Register in Consul
+        // Register in Consul first to ensure consistency
         registerInConsul(serviceInterface, implementation);
+
+        // Only add to local registry if Consul registration succeeds
+        localServices.computeIfAbsent(serviceInterface, k -> new CopyOnWriteArrayList<>())
+            .add(implementation);
 
         logger.info("Registered service: {}", serviceInterface.getSimpleName());
     }
@@ -261,8 +291,8 @@ public class ConsulServiceRegistry implements ServiceRegistry, AutoCloseable {
                 logger.warn("Service health check not yet available: {}", serviceId);
             }
 
-            // Store service ID for later cleanup
-            String key = serviceInterface.getName() + ":" + System.identityHashCode(implementation);
+            // Store service ID for later cleanup using composite key
+            ServiceKey key = new ServiceKey(serviceInterface, implementation);
             registeredServiceIds.put(key, serviceId);
 
             // Store metadata in Consul KV
@@ -285,7 +315,7 @@ public class ConsulServiceRegistry implements ServiceRegistry, AutoCloseable {
      */
     private void unregisterFromConsul(Class<?> serviceInterface, Object implementation) {
         try {
-            String key = serviceInterface.getName() + ":" + System.identityHashCode(implementation);
+            ServiceKey key = new ServiceKey(serviceInterface, implementation);
             String serviceId = registeredServiceIds.remove(key);
 
             if (serviceId != null) {
