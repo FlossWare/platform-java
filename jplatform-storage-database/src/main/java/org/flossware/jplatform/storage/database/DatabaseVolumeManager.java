@@ -22,8 +22,12 @@ import java.util.concurrent.ConcurrentHashMap;
  *   <li>Stores volume metadata and paths in a database</li>
  *   <li>Maintains local filesystem for actual file storage</li>
  *   <li>Tracks volume usage via database records</li>
- *   <li>Supports any JDBC-compatible database</li>
+ *   <li>Supports H2 and MySQL databases (uses database-specific SQL syntax)</li>
  * </ul>
+ *
+ * <p><b>Database Requirements:</b> H2 or MySQL. This implementation uses
+ * database-specific SQL syntax (MERGE, AUTO_INCREMENT) that is not compatible
+ * with PostgreSQL, Oracle, SQL Server, or other databases.
  *
  * <p>Thread Safety: This class is thread-safe. All mutable state is protected
  * by concurrent collections and synchronized database access.
@@ -90,19 +94,29 @@ public class DatabaseVolumeManager implements VolumeManager, AutoCloseable {
             return;
         }
 
+        Connection tempConnection = null;
         try {
             Class.forName(config.getDriverClassName());
-            connection = DriverManager.getConnection(
+            tempConnection = DriverManager.getConnection(
                 config.getJdbcUrl(),
                 config.getUsername(),
                 config.getPassword()
             );
 
+            connection = tempConnection;
             createTablesIfNeeded();
             initialized = true;
 
             logger.info("Database volume manager initialized with URL: {}", config.getJdbcUrl());
         } catch (Exception e) {
+            // Close connection on failure to prevent leak
+            if (tempConnection != null) {
+                try {
+                    tempConnection.close();
+                } catch (SQLException closeEx) {
+                    logger.error("Error closing connection after initialization failure", closeEx);
+                }
+            }
             logger.error("Failed to initialize database volume manager", e);
             throw new RuntimeException("Failed to initialize database connection", e);
         }
@@ -173,7 +187,7 @@ public class DatabaseVolumeManager implements VolumeManager, AutoCloseable {
         if (mount == null) {
             throw new IllegalArgumentException("Volume not defined: " + volumeName);
         }
-        return mount.getMaxSizeMB() * 1024 * 1024;
+        return mount.getMaxSizeMB() * 1024L * 1024L;
     }
 
     @Override
