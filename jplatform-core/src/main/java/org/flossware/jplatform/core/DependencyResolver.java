@@ -196,7 +196,11 @@ public class DependencyResolver {
         if (serviceRegistry != null) {
             try {
                 // Convert string interface name to Class
-                Class<?> interfaceClass = Class.forName(serviceInterface);
+                // Use context class loader to support application-specific interfaces
+                ClassLoader contextLoader = Thread.currentThread().getContextClassLoader();
+                Class<?> interfaceClass = contextLoader != null
+                    ? Class.forName(serviceInterface, true, contextLoader)
+                    : Class.forName(serviceInterface);
                 List<?> implementations = serviceRegistry.getAllServices(interfaceClass);
 
                 if (implementations.isEmpty() && dependency.isRequired()) {

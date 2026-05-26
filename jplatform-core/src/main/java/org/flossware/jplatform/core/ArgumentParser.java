@@ -12,13 +12,18 @@ import java.util.regex.Pattern;
  * <pre>{@code
  * parseArguments("--config \"/path with spaces/config.json\" --port 8080")
  * // Returns: ["--config", "/path with spaces/config.json", "--port", "8080"]
+ *
+ * parseArguments("--message \"He said \\\"hello\\\"\"")
+ * // Returns: ["--message", "He said \"hello\""]
  * }</pre>
  *
  * <p>Thread-safe and stateless.</p>
  */
 class ArgumentParser {
 
-    private static final Pattern ARG_PATTERN = Pattern.compile("\"([^\"]*)\"|'([^']*)'|(\\S+)");
+    // Pattern that handles escaped quotes: \" and \' within quoted strings
+    private static final Pattern ARG_PATTERN = Pattern.compile(
+        "\"((?:[^\\\\\"]|\\\\.)*)\"|'((?:[^\\\\']|\\\\.)*)'|(\\S+)");
 
     /**
      * Parses a command-line argument string respecting quoted strings.
@@ -40,11 +45,11 @@ class ArgumentParser {
 
         while (matcher.find()) {
             if (matcher.group(1) != null) {
-                // Double-quoted string
-                args.add(matcher.group(1));
+                // Double-quoted string - unescape backslash sequences
+                args.add(unescapeString(matcher.group(1)));
             } else if (matcher.group(2) != null) {
-                // Single-quoted string
-                args.add(matcher.group(2));
+                // Single-quoted string - unescape backslash sequences
+                args.add(unescapeString(matcher.group(2)));
             } else if (matcher.group(3) != null) {
                 // Unquoted token
                 args.add(matcher.group(3));
@@ -52,5 +57,51 @@ class ArgumentParser {
         }
 
         return args;
+    }
+
+    /**
+     * Unescapes backslash sequences in a string.
+     * Converts \" to ", \' to ', \\ to \, etc.
+     *
+     * @param str the string to unescape
+     * @return the unescaped string
+     */
+    private static String unescapeString(String str) {
+        if (str == null || !str.contains("\\")) {
+            return str;
+        }
+
+        StringBuilder result = new StringBuilder();
+        for (int i = 0; i < str.length(); i++) {
+            char c = str.charAt(i);
+            if (c == '\\' && i + 1 < str.length()) {
+                // Unescape the next character
+                char next = str.charAt(i + 1);
+                switch (next) {
+                    case 'n':
+                        result.append('\n');
+                        break;
+                    case 't':
+                        result.append('\t');
+                        break;
+                    case 'r':
+                        result.append('\r');
+                        break;
+                    case '\\':
+                    case '"':
+                    case '\'':
+                        result.append(next);
+                        break;
+                    default:
+                        // Unknown escape sequence, keep the backslash
+                        result.append('\\').append(next);
+                        break;
+                }
+                i++; // Skip the next character
+            } else {
+                result.append(c);
+            }
+        }
+        return result.toString();
     }
 }
