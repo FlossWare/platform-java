@@ -220,4 +220,48 @@ class WebConsoleHandlerTest {
         // Should ignore fragment and serve the file
         verify(exchange).sendResponseHeaders(eq(200), anyLong());
     }
+
+    @Test
+    void testContentTypeForJson() throws IOException {
+        when(exchange.getRequestURI()).thenReturn(URI.create("/data.json"));
+        when(exchange.getRequestMethod()).thenReturn("GET");
+
+        handler.handle(exchange);
+
+        Headers headers = exchange.getResponseHeaders();
+        assertEquals("application/json; charset=UTF-8", headers.getFirst("Content-Type"));
+    }
+
+    @Test
+    void testContentTypeForPng() throws IOException {
+        when(exchange.getRequestURI()).thenReturn(URI.create("/image.png"));
+        when(exchange.getRequestMethod()).thenReturn("GET");
+
+        handler.handle(exchange);
+
+        Headers headers = exchange.getResponseHeaders();
+        assertEquals("image/png", headers.getFirst("Content-Type"));
+    }
+
+    @Test
+    void testContentTypeForJpeg() throws IOException {
+        when(exchange.getRequestURI()).thenReturn(URI.create("/photo.jpeg"));
+        when(exchange.getRequestMethod()).thenReturn("GET");
+
+        handler.handle(exchange);
+
+        Headers headers = exchange.getResponseHeaders();
+        assertEquals("image/jpeg", headers.getFirst("Content-Type"));
+    }
+
+    @Test
+    void testContentTypeForSvg() throws IOException {
+        when(exchange.getRequestURI()).thenReturn(URI.create("/icon.svg"));
+        when(exchange.getRequestMethod()).thenReturn("GET");
+
+        handler.handle(exchange);
+
+        Headers headers = exchange.getResponseHeaders();
+        assertEquals("image/svg+xml", headers.getFirst("Content-Type"));
+    }
 }
