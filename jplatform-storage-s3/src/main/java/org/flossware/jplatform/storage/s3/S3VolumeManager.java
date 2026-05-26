@@ -226,12 +226,11 @@ public class S3VolumeManager implements VolumeManager, AutoCloseable {
         }
 
         Path localPath = getVolumePath(volumeName).resolve(relativePath);
-        if (!Files.exists(localPath)) {
-            throw new IOException("File not found: " + localPath);
-        }
 
         try {
             String s3Key = buildS3Key(volumeName, relativePath);
+
+            // Let RequestBody.fromFile() handle file existence check
             s3Client.putObject(
                 PutObjectRequest.builder()
                     .bucket(config.getBucketName())
@@ -242,8 +241,14 @@ public class S3VolumeManager implements VolumeManager, AutoCloseable {
 
             logger.debug("Uploaded file to S3: {}", s3Key);
         } catch (Exception e) {
+            // Check if file was missing (may be wrapped in SDK exception)
+            Throwable cause = e.getCause();
+            if (e instanceof java.nio.file.NoSuchFileException ||
+                (cause instanceof java.nio.file.NoSuchFileException)) {
+                throw new IOException("File not found: " + localPath, e);
+            }
             logger.error("Failed to upload file to S3: " + relativePath, e);
-            throw new IOException("Failed to upload file", e);
+            throw new IOException("Failed to upload file to S3", e);
         }
     }
 
