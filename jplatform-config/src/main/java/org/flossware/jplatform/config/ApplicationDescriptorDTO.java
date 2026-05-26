@@ -219,20 +219,21 @@ public class ApplicationDescriptorDTO {
          * Converts this DTO to a SecurityConfig domain object.
          *
          * @return the SecurityConfig instance
+         * @throws ParseException if validation fails
          */
-        public SecurityConfig toSecurityConfig() {
+        public SecurityConfig toSecurityConfig() throws ParseException {
             SecurityConfig.Builder builder = SecurityConfig.builder();
 
             if (filePermissions != null) {
                 for (FilePermissionDTO fp : filePermissions) {
                     if (fp == null) {
-                        throw new IllegalArgumentException("File permission entry cannot be null");
+                        throw new ParseException("File permission entry cannot be null");
                     }
                     if (fp.path == null || fp.path.trim().isEmpty()) {
-                        throw new IllegalArgumentException("File permission path cannot be null or empty");
+                        throw new ParseException("File permission path cannot be null or empty");
                     }
                     if (fp.actions == null || fp.actions.trim().isEmpty()) {
-                        throw new IllegalArgumentException("File permission actions cannot be null or empty");
+                        throw new ParseException("File permission actions cannot be null or empty");
                     }
                     builder.addFilePermission(new FilePermission(fp.path, fp.actions));
                 }
@@ -241,13 +242,13 @@ public class ApplicationDescriptorDTO {
             if (socketPermissions != null) {
                 for (SocketPermissionDTO sp : socketPermissions) {
                     if (sp == null) {
-                        throw new IllegalArgumentException("Socket permission entry cannot be null");
+                        throw new ParseException("Socket permission entry cannot be null");
                     }
                     if (sp.host == null || sp.host.trim().isEmpty()) {
-                        throw new IllegalArgumentException("Socket permission host cannot be null or empty");
+                        throw new ParseException("Socket permission host cannot be null or empty");
                     }
                     if (sp.actions == null || sp.actions.trim().isEmpty()) {
-                        throw new IllegalArgumentException("Socket permission actions cannot be null or empty");
+                        throw new ParseException("Socket permission actions cannot be null or empty");
                     }
                     builder.addSocketPermission(new SocketPermission(sp.host, sp.actions));
                 }
@@ -256,7 +257,7 @@ public class ApplicationDescriptorDTO {
             if (runtimePermissions != null) {
                 for (String rp : runtimePermissions) {
                     if (rp == null || rp.trim().isEmpty()) {
-                        throw new IllegalArgumentException("Runtime permission name cannot be null or empty");
+                        throw new ParseException("Runtime permission name cannot be null or empty");
                     }
                     builder.addRuntimePermission(new RuntimePermission(rp));
                 }

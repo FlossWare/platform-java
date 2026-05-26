@@ -137,6 +137,12 @@ public class AutoDeploymentHandler implements DeploymentEventListener {
     public void onDescriptorModified(Path descriptorFile) {
         logger.info("Descriptor modified: {}", descriptorFile);
 
+        // Check auto-deploy setting first to avoid undeploying without redeploying
+        if (!config.isAutoDeploy()) {
+            logger.info("Auto-deploy is disabled, skipping redeploy for: {}", descriptorFile);
+            return;
+        }
+
         String existingAppId = registry.get(descriptorFile);
 
         try {
@@ -162,23 +168,16 @@ public class AutoDeploymentHandler implements DeploymentEventListener {
             }
 
             // Deploy new version
-            if (config.isAutoDeploy()) {
-                logger.info("Deploying updated application: {} (from {})", newAppId, descriptorFile);
+            logger.info("Deploying updated application: {} (from {})", newAppId, descriptorFile);
+            applicationManager.deploy(descriptor);
+            registry.put(descriptorFile, newAppId);
+            logger.info("Application deployed successfully: {}", newAppId);
 
-                applicationManager.deploy(descriptor);
-                registry.put(descriptorFile, newAppId);
-
-                logger.info("Application deployed successfully: {}", newAppId);
-
-                // Start if auto-start is enabled
-                if (config.isAutoStart()) {
-                    logger.info("Auto-starting application: {}", newAppId);
-                    applicationManager.start(newAppId);
-                    logger.info("Application started successfully: {}", newAppId);
-                }
-            } else {
-                // Auto-deploy disabled, just remove from registry
-                registry.remove(descriptorFile);
+            // Start if auto-start is enabled
+            if (config.isAutoStart()) {
+                logger.info("Auto-starting application: {}", newAppId);
+                applicationManager.start(newAppId);
+                logger.info("Application started successfully: {}", newAppId);
             }
 
         } catch (ParseException e) {
