@@ -155,11 +155,20 @@ public class ManagedThreadPool implements org.flossware.jplatform.api.ThreadPool
 
     /**
      * Initiates an orderly shutdown in which previously submitted tasks are executed,
-     * but no new tasks will be accepted. Waits up to 30 seconds for termination,
-     * then forces shutdown if necessary.
+     * but no new tasks will be accepted.
      * <p>
-     * This method does not wait for actively executing tasks to terminate.
-     * Use {@link #isTerminated()} to check completion.
+     * <b>This method blocks</b> and waits up to {@code shutdownTimeoutSeconds} for
+     * actively executing tasks to terminate. If tasks do not complete within the
+     * timeout period, forces immediate shutdown via {@link #shutdownNow()}.
+     * <p>
+     * If the waiting thread is interrupted, calls {@link #shutdownNow()} immediately
+     * and restores the interrupt status.
+     * <p>
+     * Use {@link #isTerminated()} after this method returns to verify all tasks
+     * have completed (especially if timeout was reached and force-shutdown occurred).
+     *
+     * @see #shutdownNow()
+     * @see #isTerminated()
      */
     @Override
     public void shutdown() {
