@@ -53,8 +53,12 @@ public class EnforcementPolicy {
      *
      * @param resourceType the resource type (e.g., "heap", "cpu", "threads")
      * @return true if enforcement should be triggered
+     * @throws IllegalArgumentException if resourceType is null or empty
      */
     public boolean recordViolation(String resourceType) {
+        if (resourceType == null || resourceType.trim().isEmpty()) {
+            throw new IllegalArgumentException("resourceType cannot be null or empty");
+        }
         int count = violationCounts.compute(resourceType, (k, v) -> v == null ? 1 : v + 1);
         return count >= gracePeriod;
     }
@@ -64,8 +68,12 @@ public class EnforcementPolicy {
      * Called when a resource is back within quota limits.
      *
      * @param resourceType the resource type to clear
+     * @throws IllegalArgumentException if resourceType is null or empty
      */
     public void clearViolation(String resourceType) {
+        if (resourceType == null || resourceType.trim().isEmpty()) {
+            throw new IllegalArgumentException("resourceType cannot be null or empty");
+        }
         violationCounts.remove(resourceType);
     }
 
@@ -74,8 +82,12 @@ public class EnforcementPolicy {
      *
      * @param resourceType the resource type
      * @return the current violation count, or 0 if no violations
+     * @throws IllegalArgumentException if resourceType is null or empty
      */
     public int getViolationCount(String resourceType) {
+        if (resourceType == null || resourceType.trim().isEmpty()) {
+            throw new IllegalArgumentException("resourceType cannot be null or empty");
+        }
         return violationCounts.getOrDefault(resourceType, 0);
     }
 
