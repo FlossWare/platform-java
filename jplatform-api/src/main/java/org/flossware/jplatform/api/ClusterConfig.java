@@ -121,6 +121,9 @@ public class ClusterConfig {
          * @return this builder
          */
         public Builder clusterName(String clusterName) {
+            if (clusterName == null || clusterName.trim().isEmpty()) {
+                throw new IllegalArgumentException("clusterName cannot be null or empty");
+            }
             this.clusterName = clusterName;
             return this;
         }
@@ -132,6 +135,9 @@ public class ClusterConfig {
          * @return this builder
          */
         public Builder bindAddress(String bindAddress) {
+            if (bindAddress == null || bindAddress.trim().isEmpty()) {
+                throw new IllegalArgumentException("bindAddress cannot be null or empty");
+            }
             this.bindAddress = bindAddress;
             return this;
         }
@@ -159,6 +165,9 @@ public class ClusterConfig {
          * @return this builder
          */
         public Builder addSeedNode(String seedNode) {
+            if (seedNode == null || seedNode.trim().isEmpty()) {
+                throw new IllegalArgumentException("seedNode cannot be null or empty");
+            }
             if (this.seedNodes == null) {
                 this.seedNodes = new ArrayList<>();
             }
@@ -173,7 +182,13 @@ public class ClusterConfig {
          * @return this builder
          */
         public Builder seedNodes(List<String> seedNodes) {
-            this.seedNodes = new ArrayList<>(seedNodes);
+            if (seedNodes == null) {
+                throw new IllegalArgumentException("seedNodes list cannot be null");
+            }
+            this.seedNodes = new ArrayList<>();
+            for (String seedNode : seedNodes) {
+                addSeedNode(seedNode);  // Reuse validation
+            }
             return this;
         }
 
@@ -184,6 +199,9 @@ public class ClusterConfig {
          * @return this builder
          */
         public Builder stateBackend(StateBackend stateBackend) {
+            if (stateBackend == null) {
+                throw new IllegalArgumentException("stateBackend cannot be null");
+            }
             this.stateBackend = stateBackend;
             return this;
         }

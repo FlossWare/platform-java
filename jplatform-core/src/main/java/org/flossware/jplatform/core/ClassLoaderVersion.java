@@ -72,7 +72,7 @@ class ClassLoaderVersion {
      *
      * @return reference count
      */
-    public int getReferenceCount() {
+    public synchronized int getReferenceCount() {
         return referenceCount;
     }
 
