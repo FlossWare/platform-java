@@ -557,8 +557,10 @@ class ClusteredApplicationManagerTest {
 
         ApplicationDescriptor descriptor = createTestDescriptor("error-app");
 
-        // When/Then
-        assertThrows(RuntimeException.class, () -> manager.deploy(descriptor));
+        // When/Then - deployment wraps errors in Exception after rollback
+        Exception ex = assertThrows(Exception.class, () -> manager.deploy(descriptor));
+        assertTrue(ex.getMessage().contains("Deployment failed and rollback completed"));
+        assertTrue(ex.getCause() instanceof RuntimeException);
     }
 
     /**
