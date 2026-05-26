@@ -126,11 +126,16 @@ public class EtcdStateStore implements ClusterStateStore {
                     ApplicationState state = mapper.readValue(json, ApplicationState.class);
                     states.put(id, state);
                 } catch (Exception e) {
-                    logger.error("Failed to deserialize state", e);
+                    logger.error("Failed to deserialize state for key: {}", kv.getKey(), e);
+                    throw new RuntimeException(
+                        "Failed to deserialize application state - cluster state may be corrupted", e);
                 }
             }
+        } catch (RuntimeException e) {
+            throw e;  // Re-throw deserialization failures
         } catch (Exception e) {
             logger.error("Failed to get all application states", e);
+            throw new RuntimeException("Failed to retrieve application states from etcd", e);
         }
         return states;
     }
@@ -203,11 +208,16 @@ public class EtcdStateStore implements ClusterStateStore {
                     ApplicationDescriptor desc = mapper.readValue(json, ApplicationDescriptor.class);
                     descriptors.put(id, desc);
                 } catch (Exception e) {
-                    logger.error("Failed to deserialize descriptor", e);
+                    logger.error("Failed to deserialize descriptor for key: {}", kv.getKey(), e);
+                    throw new RuntimeException(
+                        "Failed to deserialize application descriptor - cluster state may be corrupted", e);
                 }
             }
+        } catch (RuntimeException e) {
+            throw e;  // Re-throw deserialization failures
         } catch (Exception e) {
             logger.error("Failed to get all application descriptors", e);
+            throw new RuntimeException("Failed to retrieve application descriptors from etcd", e);
         }
         return descriptors;
     }
