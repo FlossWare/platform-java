@@ -140,11 +140,24 @@ public class RedisClusterManager implements ClusterManager {
 
             for (Map.Entry<String, String> entry : members.entrySet()) {
                 String memberId = entry.getKey();
-                nodes.add(new ClusterNode(memberId,
-                    clusterConfig.getBindAddress(),
-                    clusterConfig.getBindPort(),
-                    ClusterNode.NodeState.ACTIVE,
-                    System.currentTimeMillis()));
+                String nodeInfoJson = entry.getValue();
+
+                try {
+                    // Parse JSON to extract address, port, timestamp
+                    String address = extractJsonString(nodeInfoJson, "address");
+                    int port = extractJsonInt(nodeInfoJson, "port");
+                    long timestamp = extractJsonLong(nodeInfoJson, "timestamp");
+
+                    nodes.add(new ClusterNode(
+                        memberId,
+                        address,
+                        port,
+                        ClusterNode.NodeState.ACTIVE,
+                        timestamp
+                    ));
+                } catch (Exception e) {
+                    logger.error("Failed to parse node info for: {}", memberId, e);
+                }
             }
         } catch (Exception e) {
             logger.error("Failed to get nodes", e);
@@ -215,7 +228,14 @@ public class RedisClusterManager implements ClusterManager {
     private void registerMember() {
         try (Jedis jedis = pool.getResource()) {
             String memberKey = MEMBER_KEY_PREFIX + clusterConfig.getClusterName();
-            jedis.hset(memberKey, nodeId, String.valueOf(System.currentTimeMillis()));
+            // Store node info as JSON: {"timestamp": ..., "address": "...", "port": ...}
+            String nodeInfo = String.format(
+                "{\"timestamp\":%d,\"address\":\"%s\",\"port\":%d}",
+                System.currentTimeMillis(),
+                clusterConfig.getBindAddress(),
+                clusterConfig.getBindPort()
+            );
+            jedis.hset(memberKey, nodeId, nodeInfo);
             jedis.expire(memberKey, config.getLeaseTtl() * 2);
         } catch (Exception e) {
             logger.error("Failed to register member", e);
@@ -262,6 +282,66 @@ public class RedisClusterManager implements ClusterManager {
      */
     public JedisPool getJedisPool() {
         return pool;
+    }
+
+    /**
+     * Extracts a string value from a simple JSON object.
+     *
+     * @param json the JSON string
+     * @param key the key to extract
+     * @return the extracted string value
+     */
+    private String extractJsonString(String json, String key) {
+        String pattern = "\"" + key + "\":\"";
+        int start = json.indexOf(pattern);
+        if (start == -1) {
+            throw new IllegalArgumentException("Key not found in JSON: " + key);
+        }
+        start += pattern.length();
+        int end = json.indexOf("\"", start);
+        return json.substring(start, end);
+    }
+
+    /**
+     * Extracts an integer value from a simple JSON object.
+     *
+     * @param json the JSON string
+     * @param key the key to extract
+     * @return the extracted integer value
+     */
+    private int extractJsonInt(String json, String key) {
+        String pattern = "\"" + key + "\":";
+        int start = json.indexOf(pattern);
+        if (start == -1) {
+            throw new IllegalArgumentException("Key not found in JSON: " + key);
+        }
+        start += pattern.length();
+        int end = json.indexOf(",", start);
+        if (end == -1) {
+            end = json.indexOf("}", start);
+        }
+        return Integer.parseInt(json.substring(start, end).trim());
+    }
+
+    /**
+     * Extracts a long value from a simple JSON object.
+     *
+     * @param json the JSON string
+     * @param key the key to extract
+     * @return the extracted long value
+     */
+    private long extractJsonLong(String json, String key) {
+        String pattern = "\"" + key + "\":";
+        int start = json.indexOf(pattern);
+        if (start == -1) {
+            throw new IllegalArgumentException("Key not found in JSON: " + key);
+        }
+        start += pattern.length();
+        int end = json.indexOf(",", start);
+        if (end == -1) {
+            end = json.indexOf("}", start);
+        }
+        return Long.parseLong(json.substring(start, end).trim());
     }
 
     /**
