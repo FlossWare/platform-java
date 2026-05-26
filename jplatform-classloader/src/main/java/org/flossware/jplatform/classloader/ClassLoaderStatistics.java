@@ -19,6 +19,23 @@ public class ClassLoaderStatistics {
      */
     public ClassLoaderStatistics(String applicationId, int classesLoaded,
                                 long totalBytesLoaded, long cacheHits) {
+        if (applicationId == null) {
+            throw new IllegalArgumentException("applicationId cannot be null");
+        }
+        if (classesLoaded < 0) {
+            throw new IllegalArgumentException("classesLoaded cannot be negative: " + classesLoaded);
+        }
+        if (totalBytesLoaded < 0) {
+            throw new IllegalArgumentException("totalBytesLoaded cannot be negative: " + totalBytesLoaded);
+        }
+        if (cacheHits < 0) {
+            throw new IllegalArgumentException("cacheHits cannot be negative: " + cacheHits);
+        }
+        if (cacheHits > classesLoaded) {
+            throw new IllegalArgumentException(
+                "cacheHits (" + cacheHits + ") cannot exceed classesLoaded (" + classesLoaded + ")");
+        }
+
         this.applicationId = applicationId;
         this.classesLoaded = classesLoaded;
         this.totalBytesLoaded = totalBytesLoaded;

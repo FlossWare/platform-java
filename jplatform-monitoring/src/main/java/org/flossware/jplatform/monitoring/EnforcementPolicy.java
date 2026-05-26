@@ -59,7 +59,16 @@ public class EnforcementPolicy {
         if (resourceType == null || resourceType.trim().isEmpty()) {
             throw new IllegalArgumentException("resourceType cannot be null or empty");
         }
-        int count = violationCounts.compute(resourceType, (k, v) -> v == null ? 1 : v + 1);
+        int count = violationCounts.compute(resourceType, (k, v) -> {
+            if (v == null) {
+                return 1;
+            }
+            // Cap at Integer.MAX_VALUE to prevent overflow
+            if (v >= Integer.MAX_VALUE) {
+                return Integer.MAX_VALUE;
+            }
+            return v + 1;
+        });
         return count >= gracePeriod;
     }
 
