@@ -1,7 +1,10 @@
 package org.flossware.jplatform.cluster.etcd;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.etcd.jetcd.*;
+import io.etcd.jetcd.kv.GetResponse;
 import io.etcd.jetcd.lock.LockResponse;
+import io.etcd.jetcd.options.GetOption;
 import org.flossware.jplatform.api.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,8 +22,10 @@ import java.util.concurrent.*;
 public class EtcdClusterManager implements ClusterManager {
     private static final Logger logger = LoggerFactory.getLogger(EtcdClusterManager.class);
     private static final String LEADER_KEY_PREFIX = "/jplatform/leader/";
+    private static final String NODES_KEY_PREFIX = "/jplatform/nodes/";
 
     private final EtcdConfig config;
+    private final ObjectMapper objectMapper;
     private Client etcdClient;
     private Lock lockClient;
     private Lease leaseClient;
@@ -43,6 +48,7 @@ public class EtcdClusterManager implements ClusterManager {
             throw new IllegalArgumentException("Config must not be null");
         }
         this.config = config;
+        this.objectMapper = new ObjectMapper();
         this.listeners = new CopyOnWriteArrayList<>();
         this.nodeId = UUID.randomUUID().toString();
     }
@@ -59,6 +65,7 @@ public class EtcdClusterManager implements ClusterManager {
             throw new IllegalArgumentException("Config must not be null");
         }
         this.config = config;
+        this.objectMapper = new ObjectMapper();
         this.etcdClient = client;
         this.listeners = new CopyOnWriteArrayList<>();
         this.nodeId = UUID.randomUUID().toString();
@@ -137,7 +144,28 @@ public class EtcdClusterManager implements ClusterManager {
 
     @Override
     public Set<ClusterNode> getNodes() {
-        return Collections.emptySet();
+        if (!joined) {
+            return Collections.emptySet();
+        }
+
+        Set<ClusterNode> nodes = new HashSet<>();
+        try {
+            KV kvClient = etcdClient.getKVClient();
+            GetResponse response = kvClient.get(
+                ByteSequence.from(NODES_KEY_PREFIX, StandardCharsets.UTF_8),
+                GetOption.newBuilder().isPrefix(true).build()
+            ).get(5, TimeUnit.SECONDS);
+
+            for (KeyValue kv : response.getKvs()) {
+                String json = kv.getValue().toString(StandardCharsets.UTF_8);
+                ClusterNode node = objectMapper.readValue(json, ClusterNode.class);
+                nodes.add(node);
+            }
+        } catch (Exception e) {
+            logger.error("Failed to get cluster nodes from etcd", e);
+        }
+
+        return nodes;
     }
 
     @Override
