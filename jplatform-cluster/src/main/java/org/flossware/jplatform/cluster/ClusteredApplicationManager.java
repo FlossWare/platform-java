@@ -145,15 +145,27 @@ public class ClusteredApplicationManager extends ApplicationManager {
 
                 // Step 2: If leader, assign to a node
                 if (scheduler != null) {
-                    try {
-                        if (clusterManager.isLeader()) {
-                            String assignedNode = scheduler.assignApplication(appId);
-                            assigned = true;
-                            logger.info("[{}] Leader assigned application to node: {}", appId, assignedNode);
+                    // Perform leadership operations with proper exception handling
+                    boolean wasLeader = clusterManager.isLeader();
+                    if (wasLeader) {
+                        try {
+                            // Verify leadership immediately before critical operation
+                            if (!clusterManager.isLeader()) {
+                                logger.info("[{}] Lost leadership before assignment, skipping", appId);
+                            } else {
+                                String assignedNode = scheduler.assignApplication(appId);
+                                assigned = true;
+                                logger.info("[{}] Leader assigned application to node: {}", appId, assignedNode);
+                            }
+                        } catch (IllegalStateException e) {
+                            // Lost leadership during assignment - expected race condition
+                            logger.info("[{}] Lost leadership during assignment, will be handled by new leader", appId);
+                            assigned = false;  // Ensure rollback doesn't attempt to unassign
+                        } catch (Exception e) {
+                            // Other assignment errors should trigger rollback
+                            logger.error("[{}] Assignment failed: {}", appId, e.getMessage());
+                            throw e;
                         }
-                    } catch (IllegalStateException e) {
-                        // Lost leadership during assignment, log and continue
-                        logger.debug("[{}] Lost leadership during assignment: {}", appId, e.getMessage());
                     }
 
                     // Step 3: Check if assigned to local node and deploy locally
@@ -310,11 +322,36 @@ public class ClusteredApplicationManager extends ApplicationManager {
                 }
 
                 // Step 2: If leader, remove from scheduler and cluster state
-                if (clusterManager.isLeader()) {
-                    scheduler.unassignApplication(applicationId);
-                    unassigned = true;
-                    stateStore.putApplicationState(applicationId, ApplicationState.UNDEPLOYED);
-                    logger.info("[{}] Leader removed application from cluster", applicationId);
+                boolean wasLeader = clusterManager.isLeader();
+                if (wasLeader) {
+                    try {
+                        // Verify leadership immediately before critical operations
+                        if (!clusterManager.isLeader()) {
+                            logger.info("[{}] Lost leadership before unassignment, skipping cluster cleanup", applicationId);
+                        } else {
+                            scheduler.unassignApplication(applicationId);
+                            unassigned = true;
+
+                            // Verify leadership again before state update
+                            if (!clusterManager.isLeader()) {
+                                logger.warn("[{}] Lost leadership after unassignment, state update may fail", applicationId);
+                            }
+
+                            stateStore.putApplicationState(applicationId, ApplicationState.UNDEPLOYED);
+                            logger.info("[{}] Leader removed application from cluster", applicationId);
+                        }
+                    } catch (IllegalStateException e) {
+                        // Lost leadership during operations - expected race condition
+                        logger.info("[{}] Lost leadership during cluster cleanup, will be handled by new leader", applicationId);
+                        // Don't attempt rollback of cluster operations if we lost leadership
+                        if (unassigned) {
+                            unassigned = false;
+                        }
+                    } catch (Exception e) {
+                        // Other errors should trigger rollback
+                        logger.error("[{}] Cluster cleanup failed: {}", applicationId, e.getMessage());
+                        throw e;
+                    }
                 }
 
             } catch (Exception e) {
