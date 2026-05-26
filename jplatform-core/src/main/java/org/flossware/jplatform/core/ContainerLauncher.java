@@ -118,10 +118,13 @@ public class ContainerLauncher {
 
         logger.info("[{}] Container ID: {}", applicationId, containerId);
 
-        // Start output reader thread
-        startOutputReader(applicationId, runtime, containerId);
+        // Create container info
+        ContainerInfo containerInfo = new ContainerInfo(process, containerId, containerName, runtime);
 
-        return new ContainerInfo(process, containerId, containerName, runtime);
+        // Start output reader thread
+        startOutputReader(applicationId, runtime, containerId, containerInfo);
+
+        return containerInfo;
     }
 
     /**
@@ -140,12 +143,55 @@ public class ContainerLauncher {
         ContainerRuntime runtime = containerInfo.getRuntime();
         String containerId = containerInfo.getContainerId();
 
+        // Stop output reader thread first
+        containerInfo.stopOutputReader();
+
         // Stop container
         List<String> stopCommand = buildStopCommand(runtime, containerId);
         executeCommand(stopCommand, applicationId, "stop");
 
-        // Wait for stop
-        Thread.sleep(Math.min(gracefulTimeoutMs, 5000));
+        // Wait for container to actually stop (poll status)
+        long deadline = System.currentTimeMillis() + Math.min(gracefulTimeoutMs, 5000);
+        boolean stopped = false;
+
+        while (System.currentTimeMillis() < deadline) {
+            try {
+                List<String> statusCommand = new ArrayList<>();
+                statusCommand.add(runtime.getCommand());
+                statusCommand.add("inspect");
+                statusCommand.add("-f");
+                statusCommand.add("{{.State.Running}}");
+                statusCommand.add(containerId);
+
+                ProcessBuilder pb = new ProcessBuilder(statusCommand);
+                pb.redirectErrorStream(true);
+                Process p = pb.start();
+
+                try (BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(p.getInputStream()))) {
+                    String running = reader.readLine();
+                    if ("false".equals(running)) {
+                        stopped = true;
+                        logger.info("[{}] Container stopped", applicationId);
+                        break;
+                    }
+                }
+
+                p.waitFor();
+                Thread.sleep(500); // Poll every 500ms
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            } catch (IOException e) {
+                // Container might already be gone
+                stopped = true;
+                break;
+            }
+        }
+
+        if (!stopped) {
+            logger.warn("[{}] Container did not stop within timeout", applicationId);
+        }
 
         // Remove container
         List<String> removeCommand = buildRemoveCommand(runtime, containerId);
@@ -337,8 +383,10 @@ public class ContainerLauncher {
     /**
      * Starts a background thread to read and log container output.
      */
-    private void startOutputReader(String applicationId, ContainerRuntime runtime, String containerId) {
+    private void startOutputReader(String applicationId, ContainerRuntime runtime,
+                                    String containerId, ContainerInfo containerInfo) {
         Thread outputReader = new Thread(() -> {
+            Process logsProcess = null;
             try {
                 // Use container logs command to follow output
                 List<String> logsCommand = new ArrayList<>();
@@ -355,28 +403,33 @@ public class ContainerLauncher {
 
                 ProcessBuilder logsBuilder = new ProcessBuilder(logsCommand);
                 logsBuilder.redirectErrorStream(true);
-                Process logsProcess = logsBuilder.start();
+                logsProcess = logsBuilder.start();
+                containerInfo.setLogsProcess(logsProcess);
 
                 try (BufferedReader reader = new BufferedReader(
                         new InputStreamReader(logsProcess.getInputStream()))) {
 
                     String line;
-                    while ((line = reader.readLine()) != null) {
+                    while ((line = reader.readLine()) != null && !Thread.currentThread().isInterrupted()) {
                         logger.info("[{}] {}", applicationId, line);
                     }
                 }
 
             } catch (IOException e) {
-                logger.error("[{}] Error reading container logs", applicationId, e);
+                if (!Thread.currentThread().isInterrupted()) {
+                    logger.error("[{}] Error reading container logs", applicationId, e);
+                }
             }
         }, "container-logs-" + applicationId);
 
         outputReader.setDaemon(true);
+        containerInfo.setOutputReaderThread(outputReader);
         outputReader.start();
     }
 
     /**
      * Executes a command and waits for completion.
+     * Reads output asynchronously to prevent deadlock on large output.
      */
     private void executeCommand(List<String> command, String applicationId, String operation)
             throws IOException {
@@ -385,20 +438,29 @@ public class ContainerLauncher {
         builder.redirectErrorStream(true);
         Process process = builder.start();
 
+        // Read output asynchronously to avoid deadlock
+        StringBuilder output = new StringBuilder();
+        Thread outputReader = new Thread(() -> {
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(process.getInputStream()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    output.append(line).append("\n");
+                }
+            } catch (IOException e) {
+                logger.debug("Error reading command output", e);
+            }
+        });
+        outputReader.setDaemon(true);
+        outputReader.start();
+
         try {
             int exitCode = process.waitFor();
+            outputReader.join(5000); // Wait for output reader to finish
+
             if (exitCode != 0) {
-                // Read error output
-                StringBuilder error = new StringBuilder();
-                try (BufferedReader reader = new BufferedReader(
-                        new InputStreamReader(process.getInputStream()))) {
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        error.append(line).append("\n");
-                    }
-                }
                 logger.warn("[{}] Container {} command failed (exit {}): {}",
-                        applicationId, operation, exitCode, error);
+                        applicationId, operation, exitCode, output);
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -414,6 +476,8 @@ public class ContainerLauncher {
         private final String containerId;
         private final String containerName;
         private final ContainerRuntime runtime;
+        private Thread outputReaderThread;
+        private Process logsProcess;
 
         public ContainerInfo(Process process, String containerId, String containerName,
                            ContainerRuntime runtime) {
@@ -437,6 +501,23 @@ public class ContainerLauncher {
 
         public ContainerRuntime getRuntime() {
             return runtime;
+        }
+
+        void setOutputReaderThread(Thread thread) {
+            this.outputReaderThread = thread;
+        }
+
+        void setLogsProcess(Process process) {
+            this.logsProcess = process;
+        }
+
+        void stopOutputReader() {
+            if (logsProcess != null && logsProcess.isAlive()) {
+                logsProcess.destroyForcibly();
+            }
+            if (outputReaderThread != null && outputReaderThread.isAlive()) {
+                outputReaderThread.interrupt();
+            }
         }
     }
 }
