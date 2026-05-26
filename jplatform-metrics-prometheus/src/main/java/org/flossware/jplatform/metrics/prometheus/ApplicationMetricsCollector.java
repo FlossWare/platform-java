@@ -65,17 +65,37 @@ public final class ApplicationMetricsCollector {
             Map<String, String> labels = new HashMap<>();
             labels.put("app_id", appId);
 
-            // Collect resource metrics
-            ResourceSnapshot snapshot = context.getResourceMonitor().getCurrentSnapshot();
-            collectResourceMetrics(sb, labels, snapshot);
+            // Collect resource metrics if monitoring is available
+            if (context.getResourceMonitor() != null) {
+                try {
+                    ResourceSnapshot snapshot = context.getResourceMonitor().getCurrentSnapshot();
+                    collectResourceMetrics(sb, labels, snapshot);
+                } catch (Exception e) {
+                    logger.warn("Failed to collect resource metrics for {}: {}", appId, e.getMessage());
+                }
+            } else {
+                logger.debug("Resource monitoring not available for {}", appId);
+            }
 
-            // Collect thread pool metrics
-            ThreadPoolStats poolStats = context.getThreadPool().getStats();
-            collectThreadPoolMetrics(sb, labels, poolStats);
+            // Collect thread pool metrics if available
+            if (context.getThreadPool() != null) {
+                try {
+                    ThreadPoolStats poolStats = context.getThreadPool().getStats();
+                    collectThreadPoolMetrics(sb, labels, poolStats);
+                } catch (Exception e) {
+                    logger.warn("Failed to collect thread pool metrics for {}: {}", appId, e.getMessage());
+                }
+            } else {
+                logger.debug("Thread pool not available for {}", appId);
+            }
 
-            // Collect application state
-            ApplicationState state = context.getState();
-            collectStateMetrics(sb, labels, state);
+            // Always collect state metrics (doesn't require optional components)
+            try {
+                ApplicationState state = context.getState();
+                collectStateMetrics(sb, labels, state);
+            } catch (Exception e) {
+                logger.warn("Failed to collect state metrics for {}: {}", appId, e.getMessage());
+            }
 
             return sb.toString();
 
