@@ -120,6 +120,10 @@ public class ApiServerConfig {
          * @return this builder
          */
         public Builder port(int port) {
+            if (port < 1 || port > 65535) {
+                throw new IllegalArgumentException(
+                    "Port must be between 1 and 65535, got: " + port);
+            }
             this.port = port;
             return this;
         }
@@ -131,6 +135,9 @@ public class ApiServerConfig {
          * @return this builder
          */
         public Builder bindAddress(String bindAddress) {
+            if (bindAddress == null || bindAddress.trim().isEmpty()) {
+                throw new IllegalArgumentException("bindAddress cannot be null or empty");
+            }
             this.bindAddress = bindAddress;
             return this;
         }
@@ -164,6 +171,9 @@ public class ApiServerConfig {
          * @return this builder
          */
         public Builder apiKeyHeader(String apiKeyHeader) {
+            if (apiKeyHeader == null || apiKeyHeader.trim().isEmpty()) {
+                throw new IllegalArgumentException("apiKeyHeader cannot be null or empty");
+            }
             this.apiKeyHeader = apiKeyHeader;
             return this;
         }
@@ -175,6 +185,9 @@ public class ApiServerConfig {
          * @return this builder
          */
         public Builder addAllowedOrigin(String origin) {
+            if (origin == null) {
+                throw new IllegalArgumentException("origin cannot be null");
+            }
             if (this.allowedOrigins == null) {
                 this.allowedOrigins = new HashSet<>();
             }
@@ -189,6 +202,14 @@ public class ApiServerConfig {
          * @return this builder
          */
         public Builder allowedOrigins(Set<String> origins) {
+            if (origins == null) {
+                throw new IllegalArgumentException("origins cannot be null");
+            }
+            for (String origin : origins) {
+                if (origin == null) {
+                    throw new IllegalArgumentException("origins cannot contain null elements");
+                }
+            }
             this.allowedOrigins = new HashSet<>(origins);
             return this;
         }
