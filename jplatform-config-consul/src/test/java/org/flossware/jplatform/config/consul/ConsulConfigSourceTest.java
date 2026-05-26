@@ -178,4 +178,163 @@ class ConsulConfigSourceTest {
         verify(kvClient, times(0)).getValues(anyString());
         source.close();
     }
+
+    @Test
+    void testSetConfigNullKey() {
+        ConsulConfigSource source = new ConsulConfigSource(config, consul);
+
+        // Throws NullPointerException when using null as key in ConcurrentHashMap
+        assertThrows(NullPointerException.class, () -> {
+            source.setConfig(null, "value");
+        });
+    }
+
+    @Test
+    void testSetConfigNullValue() {
+        ConsulConfigSource source = new ConsulConfigSource(config, consul);
+
+        // Throws NullPointerException when putting null value in ConcurrentHashMap
+        assertThrows(NullPointerException.class, () -> {
+            source.setConfig("key", null);
+        });
+    }
+
+    @Test
+    void testDeleteConfigNullKey() {
+        ConsulConfigSource source = new ConsulConfigSource(config, consul);
+
+        // Throws NullPointerException when using null as key in ConcurrentHashMap
+        assertThrows(NullPointerException.class, () -> {
+            source.deleteConfig(null);
+        });
+    }
+
+    @Test
+    void testAddListenerNullName() {
+        ConsulConfigSource source = new ConsulConfigSource(config, consul);
+
+        // Throws NullPointerException when using null as key in ConcurrentHashMap
+        assertThrows(NullPointerException.class, () -> {
+            source.addListener(null, cfg -> {});
+        });
+    }
+
+    @Test
+    void testAddListenerNullListener() {
+        ConsulConfigSource source = new ConsulConfigSource(config, consul);
+
+        // Throws NullPointerException when putting null into ConcurrentHashMap
+        assertThrows(NullPointerException.class, () -> {
+            source.addListener("test", null);
+        });
+    }
+
+    @Test
+    void testRemoveListenerNullName() {
+        ConsulConfigSource source = new ConsulConfigSource(config, consul);
+
+        // Throws NullPointerException when using null as key in ConcurrentHashMap
+        assertThrows(NullPointerException.class, () -> {
+            source.removeListener(null);
+        });
+    }
+
+    @Test
+    void testRemoveNonexistentListener() {
+        ConsulConfigSource source = new ConsulConfigSource(config, consul);
+
+        // Should not throw
+        source.removeListener("nonexistent");
+    }
+
+    @Test
+    void testGetConfigNullKey() {
+        ConsulConfigSource source = new ConsulConfigSource(config, consul);
+
+        // Throws NullPointerException when accessing ConcurrentHashMap with null key
+        assertThrows(NullPointerException.class, () -> {
+            source.getConfig(null);
+        });
+    }
+
+    @Test
+    void testCloseNotStarted() {
+        ConsulConfigSource source = new ConsulConfigSource(config);
+
+        // Should not throw
+        source.close();
+    }
+
+    @Test
+    void testCloseMultipleTimes() {
+        ConsulConfigSource source = new ConsulConfigSource(config, consul);
+
+        source.close();
+        source.close();
+        source.close();
+
+        // Close is not idempotent - calls destroy every time
+        verify(consul, times(3)).destroy();
+    }
+
+    @Test
+    void testGetConfigCache() {
+        ConsulConfigSource source = new ConsulConfigSource(config, consul);
+
+        Map<String, String> cache = source.getConfigCache();
+        assertNotNull(cache);
+        assertTrue(cache.isEmpty());
+
+        cache.put("test", "value");
+        assertEquals("value", source.getConfig("test"));
+    }
+
+    @Test
+    void testLoadConfigAfterStart() {
+        ConsulConfigSource source = new ConsulConfigSource(config, consul);
+
+        when(kvClient.getValues(anyString())).thenReturn(Collections.emptyList());
+
+        source.start();
+        Map<String, String> loaded = source.loadConfig();
+
+        assertNotNull(loaded);
+    }
+
+    @Test
+    void testAddMultipleListeners() {
+        ConsulConfigSource source = new ConsulConfigSource(config, consul);
+
+        List<Map<String, String>> received1 = new ArrayList<>();
+        List<Map<String, String>> received2 = new ArrayList<>();
+
+        source.addListener("listener1", received1::add);
+        source.addListener("listener2", received2::add);
+
+        source.getConfigCache().put("key", "value");
+    }
+
+    @Test
+    void testSetConfigUpdatesCache() {
+        ConsulConfigSource source = new ConsulConfigSource(config, consul);
+
+        source.setConfig("update.key", "initial");
+        assertEquals("initial", source.getConfig("update.key"));
+
+        source.setConfig("update.key", "updated");
+        assertEquals("updated", source.getConfig("update.key"));
+
+        verify(kvClient, times(2)).putValue(anyString(), anyString());
+    }
+
+    @Test
+    void testDeleteConfigRemovesFromCache() {
+        ConsulConfigSource source = new ConsulConfigSource(config, consul);
+
+        source.getConfigCache().put("delete.me", "value");
+        assertEquals("value", source.getConfig("delete.me"));
+
+        source.deleteConfig("delete.me");
+        assertNull(source.getConfig("delete.me"));
+    }
 }
