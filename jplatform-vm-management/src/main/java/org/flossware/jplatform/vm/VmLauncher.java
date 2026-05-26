@@ -71,6 +71,9 @@ public class VmLauncher {
      * @throws LibvirtException if connection to libvirt fails
      */
     public VmLauncher(String libvirtUri) throws LibvirtException {
+        if (libvirtUri == null || libvirtUri.trim().isEmpty()) {
+            throw new IllegalArgumentException("libvirtUri cannot be null or empty");
+        }
         this.connection = new Connect(libvirtUri, false);
         logger.info("Connected to libvirt URI: {} (version: {})", libvirtUri, connection.getLibVirVersion());
     }
@@ -87,8 +90,29 @@ public class VmLauncher {
         Map<String, String> properties = descriptor.getProperties();
 
         String vmName = properties.getOrDefault("vm.name", applicationId);
-        int vcpu = Integer.parseInt(properties.getOrDefault("vm.vcpu", "2"));
-        int memoryMB = Integer.parseInt(properties.getOrDefault("vm.memory", "4096"));
+
+        int vcpu;
+        try {
+            vcpu = Integer.parseInt(properties.getOrDefault("vm.vcpu", "2"));
+            if (vcpu <= 0) {
+                throw new IllegalArgumentException("vm.vcpu must be positive, got: " + vcpu);
+            }
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("vm.vcpu must be a valid integer, got: " +
+                properties.get("vm.vcpu"), e);
+        }
+
+        int memoryMB;
+        try {
+            memoryMB = Integer.parseInt(properties.getOrDefault("vm.memory", "4096"));
+            if (memoryMB <= 0) {
+                throw new IllegalArgumentException("vm.memory must be positive, got: " + memoryMB);
+            }
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("vm.memory must be a valid integer, got: " +
+                properties.get("vm.memory"), e);
+        }
+
         String diskPath = properties.get("vm.disk");
         String networkMode = properties.getOrDefault("vm.network", "bridge");
 
@@ -357,6 +381,9 @@ public class VmLauncher {
      */
     public void hotAddCpu(String applicationId, VmInfo vmInfo, int additionalCpus)
             throws LibvirtException {
+        if (additionalCpus <= 0) {
+            throw new IllegalArgumentException("additionalCpus must be positive, got: " + additionalCpus);
+        }
         logger.info("[{}] Hot-adding {} vCPUs", applicationId, additionalCpus);
 
         Domain domain = vmInfo.getDomain();
@@ -385,6 +412,9 @@ public class VmLauncher {
      */
     public void hotAddMemory(String applicationId, VmInfo vmInfo, long additionalMemoryMB)
             throws LibvirtException {
+        if (additionalMemoryMB <= 0) {
+            throw new IllegalArgumentException("additionalMemoryMB must be positive, got: " + additionalMemoryMB);
+        }
         logger.info("[{}] Hot-adding {} MB of memory", applicationId, additionalMemoryMB);
 
         Domain domain = vmInfo.getDomain();
