@@ -82,8 +82,8 @@ class ApplicationReloaderTest {
     }
 
     @Test
-    void testConstructorAcceptsNullPlatformLoader() {
-        // Verify constructor handles null platform loader (defensive)
-        assertDoesNotThrow(() -> new ApplicationReloader(null));
+    void testConstructorRejectsNullPlatformLoader() {
+        // Verify constructor rejects null platform loader
+        assertThrows(NullPointerException.class, () -> new ApplicationReloader(null));
     }
 }

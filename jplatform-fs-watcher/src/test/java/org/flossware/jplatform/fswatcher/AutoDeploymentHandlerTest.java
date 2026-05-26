@@ -352,12 +352,14 @@ class AutoDeploymentHandlerTest {
 
         handler.onDescriptorModified(descriptorFile);
 
-        verify(mockApplicationManager).stop("old-app");
-        verify(mockApplicationManager).undeploy("old-app");
+        // When auto-deploy is disabled, no operations should be performed
+        verify(mockApplicationManager, never()).stop(anyString());
+        verify(mockApplicationManager, never()).undeploy(anyString());
         verify(mockApplicationManager, never()).deploy(any());
         verify(mockApplicationManager, never()).start(anyString());
 
-        assertNull(handler.getRegistry().get(descriptorFile));
+        // Registry should remain unchanged
+        assertEquals("old-app", handler.getRegistry().get(descriptorFile));
     }
 
     @Test
