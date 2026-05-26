@@ -28,6 +28,8 @@ public class ApiServerConfig {
     private final String apiKey;
     private final String apiKeyHeader;
     private final Set<String> allowedOrigins;
+    private final int threadPoolSize;
+    private final int maxThreadPoolSize;
 
     private ApiServerConfig(Builder builder) {
         this.port = builder.port;
@@ -37,6 +39,8 @@ public class ApiServerConfig {
         this.apiKeyHeader = builder.apiKeyHeader;
         this.allowedOrigins = builder.allowedOrigins != null ?
                 Set.copyOf(builder.allowedOrigins) : Collections.emptySet();
+        this.threadPoolSize = builder.threadPoolSize;
+        this.maxThreadPoolSize = builder.maxThreadPoolSize;
     }
 
     /**
@@ -94,6 +98,24 @@ public class ApiServerConfig {
     }
 
     /**
+     * Returns the core thread pool size for handling requests.
+     *
+     * @return the core thread pool size
+     */
+    public int getThreadPoolSize() {
+        return threadPoolSize;
+    }
+
+    /**
+     * Returns the maximum thread pool size for handling request bursts.
+     *
+     * @return the maximum thread pool size
+     */
+    public int getMaxThreadPoolSize() {
+        return maxThreadPoolSize;
+    }
+
+    /**
      * Creates a new builder for constructing API server configurations.
      *
      * @return a new builder instance
@@ -112,6 +134,8 @@ public class ApiServerConfig {
         private String apiKey;
         private String apiKeyHeader = "X-API-Key";
         private Set<String> allowedOrigins = new HashSet<>(Set.of("*"));
+        private int threadPoolSize = 20;
+        private int maxThreadPoolSize = 200;
 
         /**
          * Sets the port to listen on.
@@ -120,9 +144,9 @@ public class ApiServerConfig {
          * @return this builder
          */
         public Builder port(int port) {
-            if (port < 1 || port > 65535) {
+            if (port < 0 || port > 65535) {
                 throw new IllegalArgumentException(
-                    "Port must be between 1 and 65535, got: " + port);
+                    "Port must be between 0 and 65535, got: " + port);
             }
             this.port = port;
             return this;
@@ -215,15 +239,53 @@ public class ApiServerConfig {
         }
 
         /**
+         * Sets the core thread pool size for handling requests.
+         *
+         * @param size the core thread pool size
+         * @return this builder
+         * @throws IllegalArgumentException if size is less than 1
+         */
+        public Builder threadPoolSize(int size) {
+            if (size < 1) {
+                throw new IllegalArgumentException(
+                    "Thread pool size must be at least 1, got: " + size);
+            }
+            this.threadPoolSize = size;
+            return this;
+        }
+
+        /**
+         * Sets the maximum thread pool size for handling request bursts.
+         *
+         * @param size the maximum thread pool size
+         * @return this builder
+         * @throws IllegalArgumentException if size is less than threadPoolSize
+         */
+        public Builder maxThreadPoolSize(int size) {
+            if (size < 1) {
+                throw new IllegalArgumentException(
+                    "Max thread pool size must be at least 1, got: " + size);
+            }
+            this.maxThreadPoolSize = size;
+            return this;
+        }
+
+        /**
          * Builds the ApiServerConfig instance.
          *
          * @return a new ApiServerConfig
          * @throws IllegalStateException if enableAuth is true but apiKey is not set
+         * @throws IllegalStateException if maxThreadPoolSize is less than threadPoolSize
          */
         public ApiServerConfig build() {
             if (enableAuth && (apiKey == null || apiKey.trim().isEmpty())) {
                 throw new IllegalStateException(
                     "apiKey is required when enableAuth is true");
+            }
+            if (maxThreadPoolSize < threadPoolSize) {
+                throw new IllegalStateException(
+                    "Max thread pool size (" + maxThreadPoolSize +
+                    ") must be >= thread pool size (" + threadPoolSize + ")");
             }
             return new ApiServerConfig(this);
         }

@@ -112,7 +112,21 @@ public class JdkHttpApiServer implements PlatformApiServer {
         try {
             // Create HTTP server
             InetSocketAddress address = new InetSocketAddress(config.getBindAddress(), config.getPort());
+
+            // Verify the address was resolved (catches invalid hostnames early)
+            if (address.isUnresolved()) {
+                throw new ServerStartupException(
+                    "Failed to resolve bind address: " + config.getBindAddress(),
+                    config.getPort(),
+                    null);
+            }
+
             server = HttpServer.create(address, 0);
+
+            // Log the actual bound address (may differ from config if using ephemeral port)
+            InetSocketAddress boundAddress = server.getAddress();
+            logger.info("HTTP API server bound to {}:{}",
+                boundAddress.getHostString(), boundAddress.getPort());
 
             // Register handlers with CORS wrapper and store the contexts
             var applicationsContext = server.createContext("/api/applications",
@@ -133,7 +147,25 @@ public class JdkHttpApiServer implements PlatformApiServer {
             }
 
             // Configure executor for handling requests
-            executor = Executors.newFixedThreadPool(10);
+            int coreSize = config.getThreadPoolSize();
+            int maxSize = config.getMaxThreadPoolSize();
+
+            if (maxSize > coreSize) {
+                // Use cached thread pool with bounds for handling bursts
+                executor = new java.util.concurrent.ThreadPoolExecutor(
+                    coreSize,
+                    maxSize,
+                    60L, java.util.concurrent.TimeUnit.SECONDS,
+                    new java.util.concurrent.SynchronousQueue<>(),
+                    new java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy()
+                );
+                logger.info("Configured thread pool with {} core threads and {} max threads",
+                    coreSize, maxSize);
+            } else {
+                // Use fixed thread pool
+                executor = Executors.newFixedThreadPool(coreSize);
+                logger.info("Configured fixed thread pool with {} threads", coreSize);
+            }
             server.setExecutor(executor);
 
             // Start the server
