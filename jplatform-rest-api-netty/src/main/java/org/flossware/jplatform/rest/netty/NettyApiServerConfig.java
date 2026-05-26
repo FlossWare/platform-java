@@ -25,6 +25,8 @@ public class NettyApiServerConfig {
     private final int maxContentLength;
     private final boolean keepAlive;
     private final int backlog;
+    private final int globalRateLimitRps;
+    private final int perIpRateLimitRps;
 
     /**
      * Package-private constructor for builder.
@@ -39,6 +41,8 @@ public class NettyApiServerConfig {
         this.maxContentLength = builder.maxContentLength;
         this.keepAlive = builder.keepAlive;
         this.backlog = builder.backlog;
+        this.globalRateLimitRps = builder.globalRateLimitRps;
+        this.perIpRateLimitRps = builder.perIpRateLimitRps;
     }
 
     /**
@@ -105,6 +109,24 @@ public class NettyApiServerConfig {
     }
 
     /**
+     * Returns the global rate limit in requests per second.
+     *
+     * @return the global rate limit (0 = unlimited, default: 1000)
+     */
+    public int getGlobalRateLimitRps() {
+        return globalRateLimitRps;
+    }
+
+    /**
+     * Returns the per-IP rate limit in requests per second.
+     *
+     * @return the per-IP rate limit (0 = unlimited, default: 100)
+     */
+    public int getPerIpRateLimitRps() {
+        return perIpRateLimitRps;
+    }
+
+    /**
      * Creates a new builder for NettyApiServerConfig.
      *
      * @return a new builder instance
@@ -125,6 +147,8 @@ public class NettyApiServerConfig {
         private int maxContentLength = 65536;
         private boolean keepAlive = true;
         private int backlog = 128;
+        private int globalRateLimitRps = 1000;
+        private int perIpRateLimitRps = 100;
 
         /**
          * Sets the server host.
@@ -224,6 +248,34 @@ public class NettyApiServerConfig {
                 throw new IllegalArgumentException("Backlog must be at least 1");
             }
             this.backlog = backlog;
+            return this;
+        }
+
+        /**
+         * Sets the global rate limit in requests per second.
+         *
+         * @param rps requests per second (0 = unlimited, must be >= 0)
+         * @return this builder for chaining
+         */
+        public Builder globalRateLimit(int rps) {
+            if (rps < 0) {
+                throw new IllegalArgumentException("Global rate limit must be >= 0 (0 = unlimited)");
+            }
+            this.globalRateLimitRps = rps;
+            return this;
+        }
+
+        /**
+         * Sets the per-IP rate limit in requests per second.
+         *
+         * @param rps requests per second (0 = unlimited, must be >= 0)
+         * @return this builder for chaining
+         */
+        public Builder perIpRateLimit(int rps) {
+            if (rps < 0) {
+                throw new IllegalArgumentException("Per-IP rate limit must be >= 0 (0 = unlimited)");
+            }
+            this.perIpRateLimitRps = rps;
             return this;
         }
 

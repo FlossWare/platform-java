@@ -256,4 +256,77 @@ class NettyApiServerConfigTest {
 
         assertEquals(10000, config.getBacklog());
     }
+
+    @Test
+    void testDefaultRateLimits() {
+        NettyApiServerConfig config = NettyApiServerConfig.builder().build();
+
+        assertEquals(1000, config.getGlobalRateLimitRps());
+        assertEquals(100, config.getPerIpRateLimitRps());
+    }
+
+    @Test
+    void testCustomGlobalRateLimit() {
+        NettyApiServerConfig config = NettyApiServerConfig.builder()
+            .globalRateLimit(5000)
+            .build();
+
+        assertEquals(5000, config.getGlobalRateLimitRps());
+    }
+
+    @Test
+    void testCustomPerIpRateLimit() {
+        NettyApiServerConfig config = NettyApiServerConfig.builder()
+            .perIpRateLimit(50)
+            .build();
+
+        assertEquals(50, config.getPerIpRateLimitRps());
+    }
+
+    @Test
+    void testUnlimitedGlobalRateLimit() {
+        NettyApiServerConfig config = NettyApiServerConfig.builder()
+            .globalRateLimit(0)
+            .build();
+
+        assertEquals(0, config.getGlobalRateLimitRps());
+    }
+
+    @Test
+    void testUnlimitedPerIpRateLimit() {
+        NettyApiServerConfig config = NettyApiServerConfig.builder()
+            .perIpRateLimit(0)
+            .build();
+
+        assertEquals(0, config.getPerIpRateLimitRps());
+    }
+
+    @Test
+    void testNegativeGlobalRateLimit() {
+        assertThrows(IllegalArgumentException.class, () ->
+            NettyApiServerConfig.builder().globalRateLimit(-1).build()
+        );
+    }
+
+    @Test
+    void testNegativePerIpRateLimit() {
+        assertThrows(IllegalArgumentException.class, () ->
+            NettyApiServerConfig.builder().perIpRateLimit(-1).build()
+        );
+    }
+
+    @Test
+    void testBuilderChainingWithRateLimits() {
+        NettyApiServerConfig config = NettyApiServerConfig.builder()
+            .host("127.0.0.1")
+            .port(9090)
+            .globalRateLimit(2000)
+            .perIpRateLimit(200)
+            .build();
+
+        assertEquals("127.0.0.1", config.getHost());
+        assertEquals(9090, config.getPort());
+        assertEquals(2000, config.getGlobalRateLimitRps());
+        assertEquals(200, config.getPerIpRateLimitRps());
+    }
 }

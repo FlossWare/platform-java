@@ -157,6 +157,15 @@ public class NettyApiServer implements PlatformApiServer {
                         ChannelPipeline pipeline = ch.pipeline();
                         pipeline.addLast(new HttpServerCodec());
                         pipeline.addLast(new HttpObjectAggregator(maxContentLength));
+
+                        // Add rate limiting if configured
+                        if (config.getGlobalRateLimitRps() > 0 || config.getPerIpRateLimitRps() > 0) {
+                            pipeline.addLast(new RateLimitingHandler(
+                                config.getGlobalRateLimitRps(),
+                                config.getPerIpRateLimitRps()
+                            ));
+                        }
+
                         pipeline.addLast(new HttpRequestHandler(routes));
                     }
                 })

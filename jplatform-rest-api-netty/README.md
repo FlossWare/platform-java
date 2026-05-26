@@ -9,6 +9,7 @@ High-performance Netty-based REST API server implementation for JPlatform.
 - **JSON Support**: Automatic JSON request/response handling
 - **Keep-Alive**: Configurable HTTP keep-alive connections
 - **Thread Pool**: Customizable boss and worker thread pools
+- **Rate Limiting**: Built-in global and per-IP rate limiting to prevent DoS attacks
 - **Configurable**: Flexible server configuration options
 
 ## Dependencies
@@ -136,6 +137,8 @@ server.start();
 | maxContentLength | 65536 | Maximum request content length in bytes |
 | keepAlive | true | Enable HTTP keep-alive connections |
 | backlog | 128 | Server socket backlog size |
+| globalRateLimitRps | 1000 | Global rate limit in requests/sec (0 = unlimited) |
+| perIpRateLimitRps | 100 | Per-IP rate limit in requests/sec (0 = unlimited) |
 
 ## Thread Safety
 
@@ -177,10 +180,60 @@ NettyApiServerConfig config = NettyApiServerConfig.builder()
     .build();
 ```
 
+### Rate Limiting
+
+The server includes built-in rate limiting to protect against DoS attacks:
+
+```java
+NettyApiServerConfig config = NettyApiServerConfig.builder()
+    .port(8080)
+    .globalRateLimit(1000)  // Max 1000 requests/sec globally
+    .perIpRateLimit(100)    // Max 100 requests/sec per IP
+    .build();
+```
+
+**Rate Limiting Features:**
+- **Token Bucket Algorithm**: Allows bursts while maintaining average rate
+- **Global Limit**: Protects overall server capacity
+- **Per-IP Limit**: Prevents single client from monopolizing resources
+- **HTTP 429 Response**: Returns "Too Many Requests" when limit exceeded
+- **Retry-After Header**: Tells clients when to retry
+- **Zero = Unlimited**: Set to 0 to disable rate limiting
+
+**Common Configurations:**
+
+```java
+// Public API - moderate limits
+NettyApiServerConfig config = NettyApiServerConfig.builder()
+    .globalRateLimit(10000)  // 10k requests/sec total
+    .perIpRateLimit(100)     // 100 requests/sec per client
+    .build();
+
+// Internal API - higher limits
+NettyApiServerConfig config = NettyApiServerConfig.builder()
+    .globalRateLimit(50000)  // 50k requests/sec total
+    .perIpRateLimit(1000)    // 1k requests/sec per service
+    .build();
+
+// Development - no limits
+NettyApiServerConfig config = NettyApiServerConfig.builder()
+    .globalRateLimit(0)      // Unlimited
+    .perIpRateLimit(0)       // Unlimited
+    .build();
+```
+
+When rate limits are exceeded:
+- Server returns HTTP 429 (Too Many Requests)
+- Response includes `Retry-After: 1` header
+- Request is rejected without processing
+- Error is logged for monitoring
+
 ## Error Handling
 
 - Route not found returns 404 with JSON error
-- Handler exceptions return 500 with error message
+- Handler exceptions return 500 with generic error message (details logged)
+- IllegalArgumentException returns 400 with generic error message
+- Rate limit exceeded returns 429 with Retry-After header
 - All errors are logged with SLF4J
 
 ## Thread Safety
