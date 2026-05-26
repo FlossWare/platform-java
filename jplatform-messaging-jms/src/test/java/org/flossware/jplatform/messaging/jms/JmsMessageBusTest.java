@@ -665,4 +665,43 @@ class JmsMessageBusTest {
         // Handler should not have been called due to oversized body
         assertNull(receivedMessage.get());
     }
+
+    @Test
+    void testClose_withPublishSessionException() throws JMSException {
+        Session mockPublishSession = mock(Session.class);
+        when(connection.createSession(anyBoolean(), anyInt())).thenReturn(mockPublishSession);
+        doThrow(new JMSException("Session close failed")).when(mockPublishSession).close();
+
+        messageBus = new JmsMessageBus(config, connectionFactory);
+
+        // Should not throw - exception is logged
+        assertDoesNotThrow(() -> messageBus.close());
+        assertTrue(messageBus.isClosed());
+    }
+
+    @Test
+    void testClose_withConnectionException() throws JMSException {
+        doThrow(new JMSException("Connection close failed")).when(connection).close();
+
+        messageBus = new JmsMessageBus(config, connectionFactory);
+
+        // Should not throw - exception is logged
+        assertDoesNotThrow(() -> messageBus.close());
+        assertTrue(messageBus.isClosed());
+    }
+
+    @Test
+    void testClose_withSubscriptionCancelException() throws JMSException {
+        messageBus = new JmsMessageBus(config, connectionFactory);
+
+        when(subscribeSession.createTopic("test-topic")).thenReturn(topic);
+        when(subscribeSession.createConsumer(topic)).thenReturn(consumer);
+        doThrow(new JMSException("Consumer close failed")).when(consumer).close();
+
+        Subscription subscription = messageBus.subscribe("test-topic", message -> {});
+
+        // Close should handle exception from subscription cancel
+        assertDoesNotThrow(() -> messageBus.close());
+        assertTrue(messageBus.isClosed());
+    }
 }
