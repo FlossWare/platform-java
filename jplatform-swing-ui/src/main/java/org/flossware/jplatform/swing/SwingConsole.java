@@ -8,6 +8,9 @@ import org.slf4j.LoggerFactory;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.nio.file.Paths;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -91,7 +94,13 @@ public class SwingConsole {
      * Initializes the Swing UI components and layout.
      */
     private void initializeUI() {
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        frame.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosed(WindowEvent e) {
+                shutdown();
+            }
+        });
         frame.setSize(900, 600);
         frame.setLayout(new BorderLayout());
 
@@ -237,7 +246,7 @@ public class SwingConsole {
                     var descriptor = org.flossware.jplatform.api.ApplicationDescriptor.builder()
                             .applicationId(dialog.getApplicationId())
                             .mainClass(dialog.getMainClass())
-                            .addClasspathEntry(java.net.URI.create("file://" + jarPath))
+                            .addClasspathEntry(Paths.get(jarPath).toUri())
                             .build();
 
                     platformManager.deploy(descriptor);
