@@ -135,11 +135,11 @@ class VmLauncherTest {
                 "Exception should mention missing vm.disk property");
 
             launcher.close();
-        } catch (Exception e) {
-            // Expected if libvirt is not available
-            if (!e.getMessage().contains("libvirt")) {
-                throw e;
-            }
+        } catch (org.libvirt.LibvirtException e) {
+            // Expected if libvirt is not available or authentication fails
+            // Skip this test - it requires a working libvirt installation
+            org.junit.jupiter.api.Assumptions.assumeTrue(false,
+                "Skipping test - libvirt not available: " + e.getMessage());
         }
     }
 
