@@ -1,18 +1,27 @@
 package org.flossware.jplatform.registry.etcd;
 
 import io.etcd.jetcd.Client;
+import io.etcd.jetcd.KV;
+import io.etcd.jetcd.Lease;
+import io.etcd.jetcd.kv.PutResponse;
+import io.etcd.jetcd.lease.LeaseGrantResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
 class EtcdServiceRegistryTest {
     private EtcdRegistryConfig config;
     private Client mockClient;
+    private Lease mockLease;
+    private KV mockKV;
     private EtcdServiceRegistry registry;
 
     interface TestService {
@@ -28,6 +37,24 @@ class EtcdServiceRegistryTest {
     void setUp() {
         config = EtcdRegistryConfig.builder().build();
         mockClient = mock(Client.class);
+        mockLease = mock(Lease.class);
+        mockKV = mock(KV.class);
+
+        // Set up mock responses for etcd operations
+        when(mockClient.getLeaseClient()).thenReturn(mockLease);
+        when(mockClient.getKVClient()).thenReturn(mockKV);
+
+        // Mock lease grant response
+        LeaseGrantResponse leaseGrantResponse = mock(LeaseGrantResponse.class);
+        when(leaseGrantResponse.getID()).thenReturn(123456L);
+        CompletableFuture<LeaseGrantResponse> leaseFuture = CompletableFuture.completedFuture(leaseGrantResponse);
+        when(mockLease.grant(anyLong())).thenReturn(leaseFuture);
+
+        // Mock KV put response
+        PutResponse putResponse = mock(PutResponse.class);
+        CompletableFuture<PutResponse> putFuture = CompletableFuture.completedFuture(putResponse);
+        when(mockKV.put(any(), any(), any())).thenReturn(putFuture);
+
         registry = new EtcdServiceRegistry(config, mockClient);
     }
 
