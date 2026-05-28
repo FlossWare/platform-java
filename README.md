@@ -106,7 +106,7 @@ JPlatform provides runtime platform features comparable to Kubernetes/YARN for J
 - Cross-workload dependencies (VMs can depend on containers, Java apps, etc.)
 - VNC console access for VM management
 - Configurable via `vm.*` properties
-- [Documentation](jplatform-vm-management/README.md)
+- [Documentation](platform-java-vm-management/README.md)
 
 #### Enhanced Observability
 - OpenTelemetry integration for metrics export via OTLP protocol
@@ -121,44 +121,44 @@ JPlatform provides runtime platform features comparable to Kubernetes/YARN for J
 ### Module Structure
 
 ```
-jplatform/
-├── jplatform-api/              # Public APIs - interfaces and contracts
-├── jplatform-core/             # Core platform - ApplicationManager, lifecycle
-├── jplatform-classloader/      # Isolated ClassLoader implementation
-├── jplatform-threadpool/       # Managed thread pool per application
-├── jplatform-security/         # Security policy enforcement
-├── jplatform-monitoring/       # Resource monitoring and quotas
-├── jplatform-messaging/        # Optional event bus and service registry
-├── jplatform-messaging-jms/    # JMS-backed MessageBus for distributed messaging ✅ **NEW**
-├── jplatform-config/           # YAML/JSON descriptor parsing ✅ **COMPLETE**
-├── jplatform-fs-watcher/       # Filesystem monitoring for auto-deployment ✅ **COMPLETE**
-├── jplatform-rest-api/         # HTTP REST API server ✅ **COMPLETE**
-├── jplatform-web-console/      # Browser-based management UI ✅ **COMPLETE**
-├── jplatform-swing-ui/         # Swing desktop management UI ✅ **NEW**
-├── jplatform-jcurses-ui/       # Terminal UI (curses-like) ✅ **NEW**
-├── jplatform-metrics-jmx/      # JMX metrics exporter ✅ **COMPLETE**
-├── jplatform-metrics-prometheus/ # Prometheus metrics exporter ✅ **COMPLETE**
-├── jplatform-storage/          # Persistent volume management ✅ **COMPLETE (2.0)**
-├── jplatform-vm-management/    # Virtual machine management via libvirt/KVM/QEMU ✅ **NEW**
-├── jplatform-otel/             # OpenTelemetry integration ✅ **COMPLETE (2.0)**
-├── jplatform-cluster/          # Multi-node clustering (Hazelcast) ✅ **COMPLETE**
-├── jplatform-cluster-consul/   # Consul clustering plugin ✅
-├── jplatform-cluster-etcd/     # etcd clustering plugin ⚠️ **STUB**
-├── jplatform-cluster-redis/    # Redis clustering plugin ⚠️ **STUB**
-├── jplatform-cluster-zookeeper/ # ZooKeeper clustering plugin ⚠️ **STUB**
-├── jplatform-registry-consul/  # Consul service registry ✅
-├── jplatform-registry-etcd/    # etcd service registry ⚠️ **STUB**
-├── jplatform-registry-eureka/  # Eureka service registry ⚠️ **STUB**
-├── jplatform-storage-s3/       # S3 volume storage ⚠️ **STUB**
-├── jplatform-storage-database/ # Database volume storage ⚠️ **STUB**
-├── jplatform-storage-redis/    # Redis volume storage ⚠️ **STUB**
-├── jplatform-config-consul/    # Consul config source ⚠️ **STUB**
-├── jplatform-config-etcd/      # etcd config source ⚠️ **STUB**
-├── jplatform-config-vault/     # Vault config source ⚠️ **STUB**
-├── jplatform-rest-api-netty/   # Netty API server ⚠️ **STUB**
-├── jplatform-deployment/       # Deployment mechanisms
-├── jplatform-launcher/         # Platform bootstrap and main entry point
-└── jplatform-samples/          # Sample applications
+platform-java/
+├── platform-java-api/              # Public APIs - interfaces and contracts
+├── platform-java-core/             # Core platform - ApplicationManager, lifecycle
+├── platform-java-classloader/      # Isolated ClassLoader implementation
+├── platform-java-threadpool/       # Managed thread pool per application
+├── platform-java-security/         # Security policy enforcement
+├── platform-java-monitoring/       # Resource monitoring and quotas
+├── platform-java-messaging/        # Optional event bus and service registry
+├── platform-java-messaging-jms/    # JMS-backed MessageBus for distributed messaging ✅ **NEW**
+├── platform-java-config/           # YAML/JSON descriptor parsing ✅ **COMPLETE**
+├── platform-java-fs-watcher/       # Filesystem monitoring for auto-deployment ✅ **COMPLETE**
+├── platform-java-rest-api/         # HTTP REST API server ✅ **COMPLETE**
+├── platform-java-web-console/      # Browser-based management UI ✅ **COMPLETE**
+├── platform-java-swing-ui/         # Swing desktop management UI ✅ **NEW**
+├── platform-java-jcurses-ui/       # Terminal UI (curses-like) ✅ **NEW**
+├── platform-java-metrics-jmx/      # JMX metrics exporter ✅ **COMPLETE**
+├── platform-java-metrics-prometheus/ # Prometheus metrics exporter ✅ **COMPLETE**
+├── platform-java-storage/          # Persistent volume management ✅ **COMPLETE (2.0)**
+├── platform-java-vm-management/    # Virtual machine management via libvirt/KVM/QEMU ✅ **NEW**
+├── platform-java-otel/             # OpenTelemetry integration ✅ **COMPLETE (2.0)**
+├── platform-java-cluster/          # Multi-node clustering (Hazelcast) ✅ **COMPLETE**
+├── platform-java-cluster-consul/   # Consul clustering plugin ✅
+├── platform-java-cluster-etcd/     # etcd clustering plugin ⚠️ **STUB**
+├── platform-java-cluster-redis/    # Redis clustering plugin ⚠️ **STUB**
+├── platform-java-cluster-zookeeper/ # ZooKeeper clustering plugin ⚠️ **STUB**
+├── platform-java-registry-consul/  # Consul service registry ✅
+├── platform-java-registry-etcd/    # etcd service registry ⚠️ **STUB**
+├── platform-java-registry-eureka/  # Eureka service registry ⚠️ **STUB**
+├── platform-java-storage-s3/       # S3 volume storage ⚠️ **STUB**
+├── platform-java-storage-database/ # Database volume storage ⚠️ **STUB**
+├── platform-java-storage-redis/    # Redis volume storage ⚠️ **STUB**
+├── platform-java-config-consul/    # Consul config source ⚠️ **STUB**
+├── platform-java-config-etcd/      # etcd config source ⚠️ **STUB**
+├── platform-java-config-vault/     # Vault config source ⚠️ **STUB**
+├── platform-java-rest-api-netty/   # Netty API server ⚠️ **STUB**
+├── platform-java-deployment/       # Deployment mechanisms
+├── platform-java-launcher/         # Platform bootstrap and main entry point
+└── platform-java-samples/          # Sample applications
 ```
 
 ### Core Components
@@ -202,7 +202,7 @@ Tracks per-application resource usage:
 application.jar
 ├── META-INF/
 │   ├── MANIFEST.MF
-│   └── jplatform/
+│   └── platform-java/
 │       └── application.yaml
 ├── com/example/
 │   └── MyApp.class
@@ -257,7 +257,7 @@ Implement the `Application` interface to access platform features:
 ```java
 package com.example;
 
-import org.flossware.jplatform.api.*;
+import org.flossware.platform-java.api.*;
 
 public class MyApp implements Application {
     
@@ -320,7 +320,7 @@ public class LegacyApp {
 mvn clean install
 
 # Build specific module
-cd jplatform-core
+cd platform-java-core
 mvn clean install
 
 # Run tests
@@ -347,7 +347,7 @@ metrics:
   jmx:
     enabled: true
     port: 9999
-    domain: org.flossware.jplatform
+    domain: org.flossware.platform-java
   prometheus:
     enabled: true
     port: 9090
@@ -355,7 +355,7 @@ metrics:
 
 watcher:
   enabled: true
-  watchDirectory: /var/jplatform/apps
+  watchDirectory: /var/platform-java/apps
   autoStart: true
   autoDeploy: true
 ```
@@ -366,10 +366,10 @@ Command-line flags override configuration file settings:
 
 ```bash
 # Use custom configuration file
-java -jar jplatform-launcher-1.0.jar --config /path/to/custom.yaml
+java -jar platform-java-launcher-1.0.jar --config /path/to/custom.yaml
 
 # Override specific settings from file
-java -jar jplatform-launcher-1.0.jar --config platform.yaml --port 9000
+java -jar platform-java-launcher-1.0.jar --config platform.yaml --port 9000
 ```
 
 ### Using the Launcher
@@ -378,37 +378,37 @@ The launcher supports multiple optional features via command-line flags:
 
 ```bash
 # Basic launcher (interactive CLI only)
-java -jar jplatform-launcher/target/jplatform-launcher-1.0.jar
+java -jar platform-java-launcher/target/platform-java-launcher-1.0.jar
 
 # Load configuration from platform.yaml
-java -jar jplatform-launcher/target/jplatform-launcher-1.0.jar --config platform.yaml
+java -jar platform-java-launcher/target/platform-java-launcher-1.0.jar --config platform.yaml
 
 # Enable REST API on port 8080
-java -jar jplatform-launcher/target/jplatform-launcher-1.0.jar --rest-api
+java -jar platform-java-launcher/target/platform-java-launcher-1.0.jar --rest-api
 
 # Enable REST API and Web Console
-java -jar jplatform-launcher/target/jplatform-launcher-1.0.jar --rest-api --web-console
+java -jar platform-java-launcher/target/platform-java-launcher-1.0.jar --rest-api --web-console
 
 # Enable JMX metrics on port 9999
-java -jar jplatform-launcher/target/jplatform-launcher-1.0.jar --jmx-port 9999
+java -jar platform-java-launcher/target/platform-java-launcher-1.0.jar --jmx-port 9999
 
 # Enable Prometheus metrics on port 9090
-java -jar jplatform-launcher/target/jplatform-launcher-1.0.jar --prometheus
+java -jar platform-java-launcher/target/platform-java-launcher-1.0.jar --prometheus
 
 # Enable filesystem watcher for auto-deployment
-java -jar jplatform-launcher/target/jplatform-launcher-1.0.jar --watch-dir /var/jplatform/apps
+java -jar platform-java-launcher/target/platform-java-launcher-1.0.jar --watch-dir /var/platform-java/apps
 
 # Enable all features (via config file or flags)
-java -jar jplatform-launcher/target/jplatform-launcher-1.0.jar \
+java -jar platform-java-launcher/target/platform-java-launcher-1.0.jar \
   --rest-api --web-console \
   --jmx-port 9999 --prometheus \
-  --watch-dir /var/jplatform/apps
+  --watch-dir /var/platform-java/apps
 ```
 
 You'll see an interactive console with available commands:
 
 ```
-jplatform> help
+platform-java> help
 
 Available commands:
   deploy <appId> <jarFile> <mainClass>  - Deploy an application from JAR
@@ -427,35 +427,35 @@ Available commands:
 
 **1. Deploy from JAR (Interactive CLI):**
 ```bash
-jplatform> deploy my-app /path/to/app.jar com.example.MyApp
-jplatform> start my-app
+platform-java> deploy my-app /path/to/app.jar com.example.MyApp
+platform-java> start my-app
 ```
 
 **2. Deploy from YAML Descriptor:**
 ```bash
-jplatform> deploy-yaml examples/applications/sample-app.yaml
+platform-java> deploy-yaml examples/applications/sample-app.yaml
 # Application automatically deployed and ready to start
 ```
 
 **3. Deploy from JSON Descriptor:**
 ```bash
-jplatform> deploy-json examples/applications/sample-app.json
+platform-java> deploy-json examples/applications/sample-app.json
 ```
 
 **4. Auto-deployment via Filesystem Watcher:**
 ```bash
 # Start launcher with watcher enabled
-java -jar jplatform-launcher-1.0.jar --watch-dir /var/jplatform/apps
+java -jar platform-java-launcher-1.0.jar --watch-dir /var/platform-java/apps
 
 # Drop descriptor files in watched directory
-cp my-app.yaml /var/jplatform/apps/
+cp my-app.yaml /var/platform-java/apps/
 # Application automatically deployed and started
 ```
 
 **5. Deploy via REST API:**
 ```bash
 # Start launcher with REST API enabled
-java -jar jplatform-launcher-1.0.jar --rest-api
+java -jar platform-java-launcher-1.0.jar --rest-api
 
 # Deploy via HTTP
 curl -X POST http://localhost:8080/api/applications \
@@ -470,7 +470,7 @@ curl -X POST http://localhost:8080/api/applications \
 **6. Manage via Web Console:**
 ```bash
 # Start launcher with web console
-java -jar jplatform-launcher-1.0.jar --rest-api --web-console
+java -jar platform-java-launcher-1.0.jar --rest-api --web-console
 
 # Open browser to http://localhost:8080/console
 # Use web UI to deploy, start, stop, and monitor applications
@@ -480,27 +480,27 @@ java -jar jplatform-launcher-1.0.jar --rest-api --web-console
 
 **Deploy and run Hello World:**
 ```bash
-jplatform> deploy hello-world jplatform-samples/hello-world/target/sample-hello-world-1.0.jar org.flossware.jplatform.samples.helloworld.HelloWorldApp
-jplatform> start hello-world
-jplatform> status hello-world
-jplatform> stop hello-world
+platform-java> deploy hello-world platform-java-samples/hello-world/target/sample-hello-world-1.0.jar org.flossware.platform-java.samples.helloworld.HelloWorldApp
+platform-java> start hello-world
+platform-java> status hello-world
+platform-java> stop hello-world
 ```
 
 **Deploy and run Messaging App:**
 ```bash
-jplatform> deploy messaging-app jplatform-samples/messaging-app/target/sample-messaging-app-1.0.jar org.flossware.jplatform.samples.messaging.MessagingApp
-jplatform> start messaging-app
-jplatform> list
+platform-java> deploy messaging-app platform-java-samples/messaging-app/target/sample-messaging-app-1.0.jar org.flossware.platform-java.samples.messaging.MessagingApp
+platform-java> start messaging-app
+platform-java> list
 ```
 
 **Run both applications together:**
 ```bash
-jplatform> deploy hello-world jplatform-samples/hello-world/target/sample-hello-world-1.0.jar org.flossware.jplatform.samples.helloworld.HelloWorldApp
-jplatform> deploy messaging-app jplatform-samples/messaging-app/target/sample-messaging-app-1.0.jar org.flossware.jplatform.samples.messaging.MessagingApp
-jplatform> start hello-world
-jplatform> start messaging-app
-jplatform> status hello-world
-jplatform> status messaging-app
+platform-java> deploy hello-world platform-java-samples/hello-world/target/sample-hello-world-1.0.jar org.flossware.platform-java.samples.helloworld.HelloWorldApp
+platform-java> deploy messaging-app platform-java-samples/messaging-app/target/sample-messaging-app-1.0.jar org.flossware.platform-java.samples.messaging.MessagingApp
+platform-java> start hello-world
+platform-java> start messaging-app
+platform-java> status hello-world
+platform-java> status messaging-app
 ```
 
 ### Programmatic Usage
@@ -539,13 +539,13 @@ manager.shutdown();
 Bootstrap ClassLoader
   └── Platform ClassLoader
       └── System ClassLoader
-          └── PlatformSharedClassLoader (jplatform-api)
+          └── PlatformSharedClassLoader (platform-java-api)
               ├── App1ClassLoader → App1 JARs
               ├── App2ClassLoader → App2 JARs
               └── App3ClassLoader → App3 JARs
 ```
 
-Platform APIs (`jplatform-api`) are loaded once in a shared ClassLoader. Application classes use parent-last delegation to achieve maximum isolation while avoiding ClassCastExceptions on shared interfaces.
+Platform APIs (`platform-java-api`) are loaded once in a shared ClassLoader. Application classes use parent-last delegation to achieve maximum isolation while avoiding ClassCastExceptions on shared interfaces.
 
 ### Security Model
 
@@ -573,28 +573,28 @@ Applications SHOULD use the provided `ManagedThreadPool`. Direct thread creation
 
 **Core Platform:**
 - Maven multi-module structure with proper dependency management
-- Complete API definitions (`jplatform-api`) - stable interfaces
-- Core implementation (`jplatform-core`) - ApplicationManager and ApplicationContext
-- ClassLoader isolation (`jplatform-classloader`) - parent-last delegation
-- Thread pool management (`jplatform-threadpool`) - per-application isolation
-- Resource monitoring (`jplatform-monitoring`) - CPU, heap, thread tracking with quotas
-- Security policy enforcement (`jplatform-security`) - configurable permissions
-- Messaging (`jplatform-messaging`) - InMemoryMessageBus and ServiceRegistry
-- JMS Messaging (`jplatform-messaging-jms`) - JMS-backed MessageBus for multi-node messaging
-- Platform launcher (`jplatform-launcher`) - enhanced interactive console
+- Complete API definitions (`platform-java-api`) - stable interfaces
+- Core implementation (`platform-java-core`) - ApplicationManager and ApplicationContext
+- ClassLoader isolation (`platform-java-classloader`) - parent-last delegation
+- Thread pool management (`platform-java-threadpool`) - per-application isolation
+- Resource monitoring (`platform-java-monitoring`) - CPU, heap, thread tracking with quotas
+- Security policy enforcement (`platform-java-security`) - configurable permissions
+- Messaging (`platform-java-messaging`) - InMemoryMessageBus and ServiceRegistry
+- JMS Messaging (`platform-java-messaging-jms`) - JMS-backed MessageBus for multi-node messaging
+- Platform launcher (`platform-java-launcher`) - enhanced interactive console
 - Sample applications - hello-world and messaging-app
 
 **Deployment & Configuration (NEW in 1.0):**
-- YAML/JSON descriptor parsing (`jplatform-config`) - full validation
-- Filesystem watcher (`jplatform-fs-watcher`) - auto-deployment with debouncing
-- REST API server (`jplatform-rest-api`) - full HTTP API
-- Web console (`jplatform-web-console`) - modern browser-based UI
-- Swing desktop UI (`jplatform-swing-ui`) - native desktop management interface ✅ **NEW in 1.1**
-- Terminal UI (`jplatform-jcurses-ui`) - full-screen curses-like terminal interface ✅ **NEW in 1.1**
+- YAML/JSON descriptor parsing (`platform-java-config`) - full validation
+- Filesystem watcher (`platform-java-fs-watcher`) - auto-deployment with debouncing
+- REST API server (`platform-java-rest-api`) - full HTTP API
+- Web console (`platform-java-web-console`) - modern browser-based UI
+- Swing desktop UI (`platform-java-swing-ui`) - native desktop management interface ✅ **NEW in 1.1**
+- Terminal UI (`platform-java-jcurses-ui`) - full-screen curses-like terminal interface ✅ **NEW in 1.1**
 
 **Metrics & Monitoring (NEW in 1.0):**
-- JMX metrics exporter (`jplatform-metrics-jmx`) - JConsole/VisualVM integration
-- Prometheus metrics exporter (`jplatform-metrics-prometheus`) - modern monitoring stacks
+- JMX metrics exporter (`platform-java-metrics-jmx`) - JConsole/VisualVM integration
+- Prometheus metrics exporter (`platform-java-metrics-prometheus`) - modern monitoring stacks
 - 100% test coverage on all new modules
 - Complete JavaDoc documentation
 
@@ -614,22 +614,22 @@ Applications SHOULD use the provided `ManagedThreadPool`. Direct thread creation
 ## Implementation Roadmap
 
 ### Phase 1: Core Platform (MVP)
-1. `jplatform-classloader` - IsolatedClassLoader implementation
-2. `jplatform-threadpool` - ManagedThreadPool implementation
-3. `jplatform-core` - ApplicationManager and ApplicationContext
-4. `jplatform-launcher` - Basic bootstrap
+1. `platform-java-classloader` - IsolatedClassLoader implementation
+2. `platform-java-threadpool` - ManagedThreadPool implementation
+3. `platform-java-core` - ApplicationManager and ApplicationContext
+4. `platform-java-launcher` - Basic bootstrap
 
 ### Phase 2: Deployment
-5. `jplatform-deployment-api` - Deployment SPI
-6. `jplatform-deployment-fs` - File system watcher
-7. `jplatform-deployment-cli` - Command-line interface
+5. `platform-java-deployment-api` - Deployment SPI
+6. `platform-java-deployment-fs` - File system watcher
+7. `platform-java-deployment-cli` - Command-line interface
 
 ### Phase 3: Isolation & Monitoring
-8. `jplatform-security` - Security policy enforcement
-9. `jplatform-monitoring` - Resource tracking and quotas
+8. `platform-java-security` - Security policy enforcement
+9. `platform-java-monitoring` - Resource tracking and quotas
 
 ### Phase 4: Advanced Features
-10. `jplatform-messaging` - Event bus and service registry
+10. `platform-java-messaging` - Event bus and service registry
 11. Additional deployment providers
 12. Web console (UI for management)
 
@@ -695,7 +695,7 @@ JPlatform focuses on simplicity and running arbitrary Java applications (not jus
 - **[Troubleshooting Guide](docs/TROUBLESHOOTING.md)** - Common issues and solutions
 
 ### Deployment Guides
-- **[VM Management](jplatform-vm-management/README.md)** - Virtual machine deployment
+- **[VM Management](platform-java-vm-management/README.md)** - Virtual machine deployment
 - **[Container Deployment](CONTAINER_DEPLOYMENT.md)** - Container orchestration
 - **[Native Execution](NATIVE_EXECUTION.md)** - Native binary support
 
