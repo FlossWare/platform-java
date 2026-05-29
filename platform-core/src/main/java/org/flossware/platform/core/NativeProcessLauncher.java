@@ -24,11 +24,13 @@ import org.slf4j.LoggerFactory;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Launches and manages native application processes.
@@ -50,6 +52,11 @@ import java.util.Map;
 public class NativeProcessLauncher {
 
     private static final Logger logger = LoggerFactory.getLogger(NativeProcessLauncher.class);
+
+    private static final Set<String> RESTRICTED_DIRECTORIES = Set.of(
+        "/bin", "/sbin", "/usr/bin", "/usr/sbin", "/usr/local/bin",
+        "/etc", "/boot", "/sys", "/proc", "/dev", "/root"
+    );
 
     /**
      * Launches a native application process.
@@ -142,11 +149,13 @@ public class NativeProcessLauncher {
      *
      * @param descriptor the application descriptor
      * @return the executable path
+     * @throws SecurityException if the path contains path traversal attempts or points to restricted directories
      */
     private String resolveExecutablePath(ApplicationDescriptor descriptor) {
         // Check for explicit native.executable.path property
         String explicitPath = descriptor.getProperties().get("native.executable.path");
         if (explicitPath != null && !explicitPath.isEmpty()) {
+            validateExecutablePath(explicitPath);
             return explicitPath;
         }
 
@@ -155,7 +164,44 @@ public class NativeProcessLauncher {
             throw new IllegalArgumentException("No classpath entries found for native executable");
         }
 
-        return Paths.get(descriptor.getClasspathEntries().get(0)).toString();
+        String classpathPath = Paths.get(descriptor.getClasspathEntries().get(0)).toString();
+        validateExecutablePath(classpathPath);
+        return classpathPath;
+    }
+
+    /**
+     * Validates the executable path to prevent path traversal and execution of system binaries.
+     *
+     * @param path the path to validate
+     * @throws SecurityException if the path is invalid or potentially malicious
+     */
+    private void validateExecutablePath(String path) {
+        if (path == null || path.isEmpty()) {
+            throw new SecurityException("Executable path cannot be null or empty");
+        }
+
+        // Reject paths containing path traversal sequences
+        if (path.contains("../") || path.contains("..\\")) {
+            throw new SecurityException("Executable path contains illegal path traversal sequence: " + path);
+        }
+
+        // Normalize and resolve the path
+        Path normalizedPath;
+        try {
+            normalizedPath = Paths.get(path).normalize().toAbsolutePath();
+        } catch (Exception e) {
+            throw new SecurityException("Invalid executable path: " + path, e);
+        }
+
+        // Check if path points to restricted system directories
+        String normalizedPathStr = normalizedPath.toString();
+        for (String restrictedDir : RESTRICTED_DIRECTORIES) {
+            if (normalizedPathStr.startsWith(restrictedDir + "/") || normalizedPathStr.equals(restrictedDir)) {
+                throw new SecurityException("Executable path points to restricted system directory: " + path);
+            }
+        }
+
+        logger.debug("Validated executable path: {}", normalizedPath);
     }
 
     /**

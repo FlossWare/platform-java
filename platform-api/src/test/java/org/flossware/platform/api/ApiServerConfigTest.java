@@ -41,7 +41,7 @@ class ApiServerConfigTest {
         assertEquals("X-API-Key", config.getApiKeyHeader());
         assertEquals(20, config.getThreadPoolSize());
         assertEquals(200, config.getMaxThreadPoolSize());
-        assertTrue(config.getAllowedOrigins().contains("*"));
+        assertTrue(config.getAllowedOrigins().isEmpty(), "Default CORS policy should deny all origins");
     }
 
     @Test
@@ -320,7 +320,7 @@ class ApiServerConfigTest {
             .addAllowedOrigin("http://app3.com")
             .build();
 
-        assertTrue(config.getAllowedOrigins().size() >= 3);
+        assertEquals(3, config.getAllowedOrigins().size());
         assertTrue(config.getAllowedOrigins().contains("http://app1.com"));
         assertTrue(config.getAllowedOrigins().contains("http://app2.com"));
         assertTrue(config.getAllowedOrigins().contains("http://app3.com"));
@@ -357,10 +357,21 @@ class ApiServerConfigTest {
     }
 
     @Test
-    void testWildcardOrigin() {
+    void testDefaultCorsIsRestrictive() {
         ApiServerConfig config = ApiServerConfig.builder().build();
 
-        assertTrue(config.getAllowedOrigins().contains("*"));
+        assertTrue(config.getAllowedOrigins().isEmpty(),
+                "Default CORS should deny all origins for security");
+    }
+
+    @Test
+    void testWildcardOriginCanBeExplicitlySet() {
+        ApiServerConfig config = ApiServerConfig.builder()
+                .addAllowedOrigin("*")
+                .build();
+
+        assertTrue(config.getAllowedOrigins().contains("*"),
+                "Wildcard can be explicitly set (though discouraged)");
     }
 
     @Test

@@ -17,6 +17,9 @@
 
 package org.flossware.platform.api;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -32,9 +35,15 @@ import java.util.Set;
  *     .bindAddress("0.0.0.0")
  *     .enableAuth(true)
  *     .apiKey("secret-key")
- *     .addAllowedOrigin("http://localhost:3000")
+ *     .addAllowedOrigin("https://console.example.com")
+ *     .addAllowedOrigin("http://localhost:3000")  // For development only
  *     .build();
  * }</pre>
+ *
+ * <p><strong>CORS Security:</strong> The default CORS policy denies all origins.
+ * You must explicitly whitelist origins using {@link Builder#addAllowedOrigin(String)}.
+ * Never use wildcard {@code "*"} in production as it bypasses same-origin policy
+ * and creates XSS/CSRF vulnerabilities.</p>
  *
  * @see PlatformApiServer
  */
@@ -145,12 +154,14 @@ public class ApiServerConfig {
      * Builder for ApiServerConfig.
      */
     public static class Builder {
+        private static final Logger logger = LoggerFactory.getLogger(Builder.class);
+
         private int port = 8080;
         private String bindAddress = "0.0.0.0";
         private boolean enableAuth = false;
         private String apiKey;
         private String apiKeyHeader = "X-API-Key";
-        private Set<String> allowedOrigins = new HashSet<>(Set.of("*"));
+        private Set<String> allowedOrigins = new HashSet<>();
         private int threadPoolSize = 20;
         private int maxThreadPoolSize = 200;
 
@@ -222,12 +233,22 @@ public class ApiServerConfig {
         /**
          * Adds an allowed CORS origin.
          *
-         * @param origin the origin to allow
+         * <p><strong>Security Warning:</strong> Avoid using wildcard {@code "*"} as it
+         * allows any website to make authenticated requests to your API, creating
+         * XSS and CSRF attack vectors. Always specify exact origins including protocol
+         * (e.g., {@code "https://console.example.com"}).</p>
+         *
+         * @param origin the origin to allow (e.g., "https://console.example.com")
          * @return this builder
          */
         public Builder addAllowedOrigin(String origin) {
             if (origin == null) {
                 throw new IllegalArgumentException("origin cannot be null");
+            }
+            if ("*".equals(origin)) {
+                logger.warn("SECURITY WARNING: Wildcard CORS origin (*) allows any website to access your API. " +
+                           "This creates XSS and CSRF vulnerabilities. Use specific origins instead " +
+                           "(e.g., \"https://console.example.com\").");
             }
             if (this.allowedOrigins == null) {
                 this.allowedOrigins = new HashSet<>();

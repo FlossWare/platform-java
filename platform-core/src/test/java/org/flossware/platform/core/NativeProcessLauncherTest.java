@@ -162,4 +162,125 @@ class NativeProcessLauncherTest {
             new NativeProcessLauncher();
         });
     }
+
+    @Test
+    void testPathTraversalWithRelativePathIsRejected() {
+        ApplicationDescriptor descriptor = ApplicationDescriptor.builder()
+                .applicationId("app1")
+                .mainClass("com.example.App")
+                .nativeImage(true)
+                .property("native.executable.path", "../../../etc/passwd")
+                .build();
+
+        SecurityException exception = assertThrows(SecurityException.class, () -> {
+            launcher.launch("app1", descriptor, tempDir);
+        }, "Should reject path traversal with ../");
+
+        assertTrue(exception.getMessage().contains("path traversal"),
+                "Exception message should mention path traversal");
+    }
+
+    @Test
+    void testPathTraversalWithWindowsStyleIsRejected() {
+        ApplicationDescriptor descriptor = ApplicationDescriptor.builder()
+                .applicationId("app1")
+                .mainClass("com.example.App")
+                .nativeImage(true)
+                .property("native.executable.path", "..\\..\\windows\\system32\\cmd.exe")
+                .build();
+
+        SecurityException exception = assertThrows(SecurityException.class, () -> {
+            launcher.launch("app1", descriptor, tempDir);
+        }, "Should reject Windows-style path traversal");
+
+        assertTrue(exception.getMessage().contains("path traversal"),
+                "Exception message should mention path traversal");
+    }
+
+    @Test
+    void testSystemBinaryPathIsRejected() {
+        ApplicationDescriptor descriptor = ApplicationDescriptor.builder()
+                .applicationId("app1")
+                .mainClass("com.example.App")
+                .nativeImage(true)
+                .property("native.executable.path", "/bin/bash")
+                .build();
+
+        SecurityException exception = assertThrows(SecurityException.class, () -> {
+            launcher.launch("app1", descriptor, tempDir);
+        }, "Should reject system directory paths");
+
+        assertTrue(exception.getMessage().contains("restricted system directory"),
+                "Exception message should mention restricted directory");
+    }
+
+    @Test
+    void testUsrBinPathIsRejected() {
+        ApplicationDescriptor descriptor = ApplicationDescriptor.builder()
+                .applicationId("app1")
+                .mainClass("com.example.App")
+                .nativeImage(true)
+                .property("native.executable.path", "/usr/bin/curl")
+                .build();
+
+        assertThrows(SecurityException.class, () -> {
+            launcher.launch("app1", descriptor, tempDir);
+        }, "Should reject /usr/bin paths");
+    }
+
+    @Test
+    void testEtcDirectoryPathIsRejected() {
+        ApplicationDescriptor descriptor = ApplicationDescriptor.builder()
+                .applicationId("app1")
+                .mainClass("com.example.App")
+                .nativeImage(true)
+                .property("native.executable.path", "/etc/shadow")
+                .build();
+
+        assertThrows(SecurityException.class, () -> {
+            launcher.launch("app1", descriptor, tempDir);
+        }, "Should reject /etc directory paths");
+    }
+
+    @Test
+    void testClasspathEntryWithPathTraversalIsRejected() {
+        ApplicationDescriptor descriptor = ApplicationDescriptor.builder()
+                .applicationId("app1")
+                .mainClass("com.example.App")
+                .nativeImage(true)
+                .classpathEntry("../../../malicious/executable")
+                .build();
+
+        assertThrows(SecurityException.class, () -> {
+            launcher.launch("app1", descriptor, tempDir);
+        }, "Should validate classpath entries for path traversal");
+    }
+
+    @Test
+    void testClasspathEntryWithSystemPathIsRejected() {
+        ApplicationDescriptor descriptor = ApplicationDescriptor.builder()
+                .applicationId("app1")
+                .mainClass("com.example.App")
+                .nativeImage(true)
+                .classpathEntry("/bin/sh")
+                .build();
+
+        assertThrows(SecurityException.class, () -> {
+            launcher.launch("app1", descriptor, tempDir);
+        }, "Should validate classpath entries against system directories");
+    }
+
+    @Test
+    void testNullExecutablePathIsRejected() {
+        ApplicationDescriptor descriptor = ApplicationDescriptor.builder()
+                .applicationId("app1")
+                .mainClass("com.example.App")
+                .nativeImage(true)
+                .property("native.executable.path", "")
+                .build();
+
+        assertThrows(IllegalArgumentException.class, () -> {
+            launcher.launch("app1", descriptor, tempDir);
+        }, "Should reject empty executable path");
+    }
 }
