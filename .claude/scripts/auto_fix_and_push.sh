@@ -45,7 +45,7 @@ git commit -m "$COMMIT_MSG"
 
 # Push to main
 echo "Pushing to GitHub..."
-git push origin main
+git push github main
 
 echo ""
 echo "========================================="

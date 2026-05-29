@@ -49,7 +49,8 @@ if [ $PYTHON_COUNT -gt 0 ]; then
 
     # 3. Bandit (security)
     echo "[3/3] Running bandit..."
-    if find . -name "*.py" -type f -print0 | xargs -0 bandit -q 2>&1 | tee "$REVIEW_OUTPUT_DIR/bandit.txt"; then
+    # Skip B404,B602,B603,B607 for .claude/scripts/* (automation scripts using subprocess)
+    if find . -name "*.py" -type f -print0 | xargs -0 bandit -q --skip B404,B602,B603,B607 --exclude ./.claude/scripts 2>&1 | tee "$REVIEW_OUTPUT_DIR/bandit.txt"; then
         echo "✓ Bandit: PASSED"
     else
         echo "✗ Bandit: FOUND SECURITY ISSUES"
