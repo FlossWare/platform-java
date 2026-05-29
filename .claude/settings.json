@@ -8,7 +8,9 @@
       "TaskCreate",
       "TaskUpdate",
       "TaskList",
-      "TaskGet"
+      "TaskGet",
+      "Workflow",
+      "Agent"
     ],
     "alwaysAllow": {
       "tools": [
