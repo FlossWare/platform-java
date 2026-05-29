@@ -32,7 +32,7 @@ class WorkloadProfileTest {
         ApplicationDescriptor.builder()
             .applicationId("test-java-app")
             .mainClass("com.example.App")
-            .resource(ResourceConfig.builder().maxThreads(2).maxHeapMB(1024).build())
+            .resourceConfig(ResourceConfig.builder().maxThreads(2).maxHeapMB(1024).build())
             .build();
 
     WorkloadProfile profile = WorkloadProfile.analyze(descriptor);
@@ -54,7 +54,7 @@ class WorkloadProfileTest {
         ApplicationDescriptor.builder()
             .applicationId("native-app")
             .property("native.executable", "/usr/bin/postgres")
-            .resource(ResourceConfig.builder().maxThreads(4).maxHeapMB(8192).build())
+            .resourceConfig(ResourceConfig.builder().maxThreads(4).maxHeapMB(8192).build())
             .build();
 
     WorkloadProfile profile = WorkloadProfile.analyze(descriptor);
@@ -144,7 +144,7 @@ class WorkloadProfileTest {
         ApplicationDescriptor.builder()
             .applicationId("light-app")
             .mainClass("com.example.App")
-            .resource(ResourceConfig.builder().maxHeapMB(2048).build())
+            .resourceConfig(ResourceConfig.builder().maxHeapMB(2048).build())
             .build();
 
     WorkloadProfile profile = WorkloadProfile.analyze(descriptor);
@@ -158,7 +158,7 @@ class WorkloadProfileTest {
         ApplicationDescriptor.builder()
             .applicationId("heavy-app")
             .mainClass("com.example.App")
-            .resource(ResourceConfig.builder().maxHeapMB(8192).build())
+            .resourceConfig(ResourceConfig.builder().maxHeapMB(8192).build())
             .build();
 
     WorkloadProfile profile = WorkloadProfile.analyze(descriptor);
@@ -172,7 +172,7 @@ class WorkloadProfileTest {
         ApplicationDescriptor.builder()
             .applicationId("native-app")
             .property("native.executable", "/bin/sh")
-            .resource(ResourceConfig.builder().maxHeapMB(512).build())
+            .resourceConfig(ResourceConfig.builder().maxHeapMB(512).build())
             .build();
 
     WorkloadProfile profile = WorkloadProfile.analyze(descriptor);
@@ -186,7 +186,7 @@ class WorkloadProfileTest {
         ApplicationDescriptor.builder()
             .applicationId("heavy-memory-app")
             .mainClass("com.example.App")
-            .resource(ResourceConfig.builder().maxThreads(4).maxHeapMB(32768).build())
+            .resourceConfig(ResourceConfig.builder().maxThreads(4).maxHeapMB(32768).build())
             .build();
 
     WorkloadProfile profile = WorkloadProfile.analyze(descriptor);
@@ -200,7 +200,7 @@ class WorkloadProfileTest {
         ApplicationDescriptor.builder()
             .applicationId("heavy-cpu-app")
             .mainClass("com.example.App")
-            .resource(ResourceConfig.builder().maxThreads(16).maxHeapMB(4096).build())
+            .resourceConfig(ResourceConfig.builder().maxThreads(16).maxHeapMB(4096).build())
             .build();
 
     WorkloadProfile profile = WorkloadProfile.analyze(descriptor);
@@ -247,7 +247,7 @@ class WorkloadProfileTest {
         ApplicationDescriptor.builder()
             .applicationId("test-app")
             .mainClass("com.example.App")
-            .resource(ResourceConfig.builder().maxThreads(4).maxHeapMB(2048).build())
+            .resourceConfig(ResourceConfig.builder().maxThreads(4).maxHeapMB(2048).build())
             .property("replicas", "5")
             .build();
 
@@ -267,14 +267,14 @@ class WorkloadProfileTest {
         ApplicationDescriptor.builder()
             .applicationId("app1")
             .mainClass("com.example.App")
-            .resource(ResourceConfig.builder().maxThreads(2).maxHeapMB(1024).build())
+            .resourceConfig(ResourceConfig.builder().maxThreads(2).maxHeapMB(1024).build())
             .build();
 
     ApplicationDescriptor descriptor2 =
         ApplicationDescriptor.builder()
             .applicationId("app1")
             .mainClass("com.example.App")
-            .resource(ResourceConfig.builder().maxThreads(2).maxHeapMB(1024).build())
+            .resourceConfig(ResourceConfig.builder().maxThreads(2).maxHeapMB(1024).build())
             .build();
 
     WorkloadProfile profile1 = WorkloadProfile.analyze(descriptor1);

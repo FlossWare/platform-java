@@ -58,10 +58,10 @@ public class EnvironmentVariableResolver {
 
   // Pattern for ${VAR_NAME} or ${VAR_NAME:default}
   private static final Pattern BRACED_PATTERN =
-      Pattern.compile("\\$\\{([A-Za-z0-9_]+)(?::([^}]*))?\\}");
+      Pattern.compile("\\$\\{([A-Za-z_][A-Za-z0-9_]*)(?::([^}]*))?\\}");
 
   // Pattern for $VAR_NAME (simple style, no default support)
-  private static final Pattern SIMPLE_PATTERN = Pattern.compile("\\$([A-Za-z0-9_]+)");
+  private static final Pattern SIMPLE_PATTERN = Pattern.compile("\\$([A-Za-z_][A-Za-z0-9_]*)");
 
   private final Map<String, String> environmentOverrides;
   private final boolean failOnMissing;

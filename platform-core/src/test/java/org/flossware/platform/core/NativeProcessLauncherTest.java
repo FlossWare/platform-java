@@ -293,7 +293,7 @@ class NativeProcessLauncherTest {
             .applicationId("app1")
             .mainClass("com.example.App")
             .nativeImage(true)
-            .classpathEntry("../../../malicious/executable")
+            .addClasspathEntry(java.net.URI.create("file:../../../malicious/executable"))
             .build();
 
     assertThrows(
@@ -311,7 +311,7 @@ class NativeProcessLauncherTest {
             .applicationId("app1")
             .mainClass("com.example.App")
             .nativeImage(true)
-            .classpathEntry("/bin/sh")
+            .addClasspathEntry(java.net.URI.create("file:/bin/sh"))
             .build();
 
     assertThrows(

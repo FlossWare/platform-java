@@ -40,7 +40,7 @@ class WorkloadPlacementSchedulerTest {
         ApplicationDescriptor.builder()
             .applicationId("auth-service")
             .mainClass("com.example.AuthService")
-            .resource(ResourceConfig.builder().maxHeapMB(512).build())
+            .resourceConfig(ResourceConfig.builder().maxHeapMB(512).build())
             .build();
 
     PlacementDecision decision = scheduler.scheduleWorkload(descriptor);
@@ -55,7 +55,7 @@ class WorkloadPlacementSchedulerTest {
         ApplicationDescriptor.builder()
             .applicationId("ml-model")
             .mainClass("com.example.MLService")
-            .resource(ResourceConfig.builder().maxHeapMB(32768).build())
+            .resourceConfig(ResourceConfig.builder().maxHeapMB(32768).build())
             .build();
 
     PlacementDecision decision = scheduler.scheduleWorkload(descriptor);
@@ -70,7 +70,7 @@ class WorkloadPlacementSchedulerTest {
         ApplicationDescriptor.builder()
             .applicationId("api-service")
             .mainClass("com.example.ApiService")
-            .resource(ResourceConfig.builder().maxHeapMB(8192).build())
+            .resourceConfig(ResourceConfig.builder().maxHeapMB(8192).build())
             .build();
 
     PlacementDecision decision = scheduler.scheduleWorkload(descriptor);
@@ -85,7 +85,7 @@ class WorkloadPlacementSchedulerTest {
         ApplicationDescriptor.builder()
             .applicationId("postgres")
             .property("native.executable", "/usr/bin/postgres")
-            .resource(ResourceConfig.builder().maxHeapMB(16384).build())
+            .resourceConfig(ResourceConfig.builder().maxHeapMB(16384).build())
             .build();
 
     PlacementDecision decision = scheduler.scheduleWorkload(descriptor);
@@ -114,7 +114,7 @@ class WorkloadPlacementSchedulerTest {
             .applicationId("kernel-app")
             .mainClass("com.example.App")
             .property("kernel.access", "true")
-            .resource(ResourceConfig.builder().maxHeapMB(1024).build())
+            .resourceConfig(ResourceConfig.builder().maxHeapMB(1024).build())
             .build();
 
     PlacementDecision decision = scheduler.scheduleWorkload(descriptor);
@@ -130,7 +130,7 @@ class WorkloadPlacementSchedulerTest {
             .applicationId("financial-app")
             .mainClass("com.example.FinancialService")
             .property("vm.required", "true")
-            .resource(ResourceConfig.builder().maxHeapMB(2048).build())
+            .resourceConfig(ResourceConfig.builder().maxHeapMB(2048).build())
             .build();
 
     PlacementDecision decision = scheduler.scheduleWorkload(descriptor);
@@ -163,7 +163,7 @@ class WorkloadPlacementSchedulerTest {
             .applicationId("web-frontend")
             .mainClass("com.example.Frontend")
             .property("replicas", "50")
-            .resource(ResourceConfig.builder().maxHeapMB(2048).build())
+            .resourceConfig(ResourceConfig.builder().maxHeapMB(2048).build())
             .build();
 
     PlacementDecision decision = scheduler.scheduleWorkload(descriptor);
@@ -179,7 +179,7 @@ class WorkloadPlacementSchedulerTest {
             .applicationId("override-app")
             .mainClass("com.example.App")
             .property("deploymentTarget", "container")
-            .resource(ResourceConfig.builder().maxHeapMB(512).build())
+            .resourceConfig(ResourceConfig.builder().maxHeapMB(512).build())
             .build();
 
     PlacementDecision decision = scheduler.scheduleWorkload(descriptor);
@@ -196,7 +196,7 @@ class WorkloadPlacementSchedulerTest {
             .applicationId("invalid-override")
             .mainClass("com.example.App")
             .property("deploymentTarget", "invalid-backend")
-            .resource(ResourceConfig.builder().maxHeapMB(512).build())
+            .resourceConfig(ResourceConfig.builder().maxHeapMB(512).build())
             .build();
 
     PlacementDecision decision = scheduler.scheduleWorkload(descriptor);
@@ -258,7 +258,7 @@ class WorkloadPlacementSchedulerTest {
     ApplicationDescriptor descriptor =
         ApplicationDescriptor.builder()
             .applicationId("unknown-app")
-            .resource(ResourceConfig.builder().maxHeapMB(1024).build())
+            .resourceConfig(ResourceConfig.builder().maxHeapMB(1024).build())
             .build();
 
     PlacementDecision decision = scheduler.scheduleWorkload(descriptor);
