@@ -17,9 +17,21 @@
 
 package org.flossware.platform.swing;
 
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.FlowLayout;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
 
-import javax.swing.*;
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JDialog;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
 
 /**
  * Dialog for collecting deployment information.
@@ -35,10 +47,10 @@ import javax.swing.*;
  *
  * @since 2.0
  */
-class DeployDialog extends Dialog {
+class DeployDialog extends JDialog {
 
-  private final TextField applicationIdField;
-  private final TextField mainClassField;
+  private final JTextField applicationIdField;
+  private final JTextField mainClassField;
   private boolean confirmed = false;
 
   /**
@@ -47,7 +59,7 @@ class DeployDialog extends Dialog {
    * @param parent the parent frame
    * @param jarPath the path to the JAR file being deployed
    */
-  public DeployDialog(Frame parent, String jarPath) {
+  DeployDialog(JFrame parent, String jarPath) {
     super(parent, "Deploy Application", true);
 
     setLayout(new BorderLayout(10, 10));
@@ -55,7 +67,7 @@ class DeployDialog extends Dialog {
     setLocationRelativeTo(parent);
 
     // Form panel
-    Panel formPanel = new Panel(new GridBagLayout());
+    JPanel formPanel = new JPanel(new GridBagLayout());
     formPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
     GridBagConstraints gbc = new GridBagConstraints();
     gbc.fill = GridBagConstraints.HORIZONTAL;
@@ -65,11 +77,11 @@ class DeployDialog extends Dialog {
     gbc.gridx = 0;
     gbc.gridy = 0;
     gbc.weightx = 0.3;
-    formPanel.add(new Label("JAR File:"), gbc);
+    formPanel.add(new JLabel("JAR File:"), gbc);
 
     gbc.gridx = 1;
     gbc.weightx = 0.7;
-    TextField jarPathField = new TextField(jarPath);
+    JTextField jarPathField = new JTextField(jarPath);
     jarPathField.setEditable(false);
     jarPathField.setBackground(Color.LIGHT_GRAY);
     formPanel.add(jarPathField, gbc);
@@ -78,30 +90,30 @@ class DeployDialog extends Dialog {
     gbc.gridx = 0;
     gbc.gridy = 1;
     gbc.weightx = 0.3;
-    formPanel.add(new Label("Application ID:"), gbc);
+    formPanel.add(new JLabel("Application ID:"), gbc);
 
     gbc.gridx = 1;
     gbc.weightx = 0.7;
-    applicationIdField = new TextField();
+    applicationIdField = new JTextField();
     formPanel.add(applicationIdField, gbc);
 
     // Main class
     gbc.gridx = 0;
     gbc.gridy = 2;
     gbc.weightx = 0.3;
-    formPanel.add(new Label("Main Class:"), gbc);
+    formPanel.add(new JLabel("Main Class:"), gbc);
 
     gbc.gridx = 1;
     gbc.weightx = 0.7;
-    mainClassField = new TextField();
+    mainClassField = new JTextField();
     formPanel.add(mainClassField, gbc);
 
     add(formPanel, BorderLayout.CENTER);
 
     // Button panel
-    Panel buttonPanel = new Panel(new FlowLayout(FlowLayout.RIGHT));
-    Button okButton = new Button("Deploy");
-    Button cancelButton = new Button("Cancel");
+    JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+    JButton okButton = new JButton("Deploy");
+    JButton cancelButton = new JButton("Cancel");
 
     okButton.addActionListener(
         e -> {
