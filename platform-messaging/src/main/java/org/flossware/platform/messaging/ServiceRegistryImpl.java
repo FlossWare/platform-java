@@ -84,6 +84,24 @@ public class ServiceRegistryImpl implements ServiceRegistry {
      */
     @Override
     public <T> void registerService(Class<T> serviceInterface, T implementation) {
+        registerService(serviceInterface, implementation, null);
+    }
+
+    /**
+     * Registers a service implementation with a semantic version.
+     * Note: This implementation currently ignores the version parameter.
+     * Version support may be added in a future release.
+     *
+     * @param <T> the service interface type
+     * @param serviceInterface the interface class
+     * @param implementation the implementation instance
+     * @param version the semantic version (currently ignored)
+     * @throws NullPointerException if serviceInterface or implementation is null
+     * @throws IllegalArgumentException if serviceInterface is not an interface or
+     *                                  implementation does not implement the interface
+     */
+    @Override
+    public <T> void registerService(Class<T> serviceInterface, T implementation, String version) {
         Objects.requireNonNull(serviceInterface, "serviceInterface cannot be null");
         Objects.requireNonNull(implementation, "implementation cannot be null");
 
@@ -101,8 +119,13 @@ public class ServiceRegistryImpl implements ServiceRegistry {
         services.computeIfAbsent(serviceInterface, k -> new CopyOnWriteArrayList<>())
                 .add(entry);
 
-        LOGGER.info("Registered service: {} -> {}", serviceInterface.getName(),
-                implementation.getClass().getName());
+        if (version != null) {
+            LOGGER.info("Registered service: {} -> {} (version: {})", serviceInterface.getName(),
+                    implementation.getClass().getName(), version);
+        } else {
+            LOGGER.info("Registered service: {} -> {}", serviceInterface.getName(),
+                    implementation.getClass().getName());
+        }
     }
 
     /**
@@ -130,6 +153,26 @@ public class ServiceRegistryImpl implements ServiceRegistry {
         @SuppressWarnings("unchecked")
         T service = (T) entries.get(0).getImplementation();
         return Optional.of(service);
+    }
+
+    /**
+     * Returns a service matching the minimum version requirement.
+     * Note: This implementation currently ignores the version parameter and returns
+     * the first registered service. Version support may be added in a future release.
+     *
+     * @param <T> the service interface type
+     * @param serviceInterface the interface class to lookup
+     * @param minVersion the minimum required version (currently ignored)
+     * @return an Optional containing the first registered implementation, or empty if none found
+     * @throws NullPointerException if serviceInterface or minVersion is null
+     */
+    @Override
+    public <T> Optional<T> getService(Class<T> serviceInterface, String minVersion) {
+        Objects.requireNonNull(serviceInterface, "serviceInterface cannot be null");
+        Objects.requireNonNull(minVersion, "minVersion cannot be null");
+
+        // For now, just return the first service (no version checking)
+        return getService(serviceInterface);
     }
 
     /**

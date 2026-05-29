@@ -218,4 +218,80 @@ class ServiceRegistryIntegrationTest {
     assertTrue(context.getHealthChecker().isPresent(), "Health checker should be available");
     assertTrue(context.getRestartManager().isPresent(), "Restart manager should be available");
   }
+
+  @Test
+  void testServiceRegistryWithVersionedServices() throws Exception {
+    // Register versioned services in the shared registry
+    TestService service1 = new TestServiceImpl("v1.5.0");
+    TestService service2 = new TestServiceImpl("v2.0.0");
+
+    serviceRegistry.registerService(TestService.class, service1, "1.5.0");
+    serviceRegistry.registerService(TestService.class, service2, "2.0.0");
+
+    // Deploy application with service registry enabled
+    ApplicationDescriptor descriptor =
+        ApplicationDescriptor.builder()
+            .applicationId("versioned-service-app")
+            .mainClass("com.example.App")
+            .addClasspathEntry(testClasspathUri)
+            .enableMessaging(true)
+            .resourceConfig(ResourceConfig.builder().build())
+            .build();
+
+    manager.deploy(descriptor);
+
+    ApplicationContextImpl context =
+        (ApplicationContextImpl) manager.getApplicationContext("versioned-service-app");
+    assertNotNull(context);
+    assertTrue(context.getServiceRegistry().isPresent());
+
+    ServiceRegistry appRegistry = context.getServiceRegistry().get();
+
+    // Request compatible version
+    Optional<TestService> compatibleService = appRegistry.getService(TestService.class, "1.2.0");
+    assertTrue(compatibleService.isPresent());
+    assertEquals("v1.5.0", compatibleService.get().getName());
+
+    // Request incompatible version (different major)
+    Optional<TestService> incompatibleService = appRegistry.getService(TestService.class, "3.0.0");
+    assertFalse(incompatibleService.isPresent());
+  }
+
+  @Test
+  void testServiceRegistryVersionCompatibilityAcrossApplications() throws Exception {
+    // App 1 registers a service with version
+    TestService sharedService = new TestServiceImpl("shared-v1.3.0");
+    serviceRegistry.registerService(TestService.class, sharedService, "1.3.0");
+
+    ApplicationDescriptor descriptor1 =
+        ApplicationDescriptor.builder()
+            .applicationId("provider-app")
+            .mainClass("com.example.Provider")
+            .addClasspathEntry(testClasspathUri)
+            .enableMessaging(true)
+            .resourceConfig(ResourceConfig.builder().build())
+            .build();
+
+    ApplicationDescriptor descriptor2 =
+        ApplicationDescriptor.builder()
+            .applicationId("consumer-app")
+            .mainClass("com.example.Consumer")
+            .addClasspathEntry(testClasspathUri)
+            .enableMessaging(true)
+            .resourceConfig(ResourceConfig.builder().build())
+            .build();
+
+    manager.deploy(descriptor1);
+    manager.deploy(descriptor2);
+
+    // Consumer app can find service with version requirement
+    ApplicationContextImpl consumerContext =
+        (ApplicationContextImpl) manager.getApplicationContext("consumer-app");
+
+    Optional<TestService> service =
+        consumerContext.getServiceRegistry().get().getService(TestService.class, "1.0.0");
+
+    assertTrue(service.isPresent());
+    assertEquals("shared-v1.3.0", service.get().getName());
+  }
 }

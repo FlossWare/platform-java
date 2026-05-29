@@ -41,8 +41,19 @@ public class SimpleServiceRegistry implements ServiceRegistry {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SimpleServiceRegistry.class);
 
-  // Map of service interface -> list of implementations
-  private final Map<Class<?>, CopyOnWriteArrayList<Object>> services;
+  /** Holder for a service implementation with its optional version. */
+  private static class ServiceEntry {
+    final Object implementation;
+    final SemanticVersion version;
+
+    ServiceEntry(Object implementation, SemanticVersion version) {
+      this.implementation = implementation;
+      this.version = version;
+    }
+  }
+
+  // Map of service interface -> list of service entries
+  private final Map<Class<?>, CopyOnWriteArrayList<ServiceEntry>> services;
 
   /** Creates a new empty service registry. */
   public SimpleServiceRegistry() {
@@ -51,6 +62,11 @@ public class SimpleServiceRegistry implements ServiceRegistry {
 
   @Override
   public <T> void registerService(Class<T> serviceInterface, T implementation) {
+    registerService(serviceInterface, implementation, null);
+  }
+
+  @Override
+  public <T> void registerService(Class<T> serviceInterface, T implementation, String version) {
     Objects.requireNonNull(serviceInterface, "serviceInterface cannot be null");
     Objects.requireNonNull(implementation, "implementation cannot be null");
 
@@ -65,44 +81,87 @@ public class SimpleServiceRegistry implements ServiceRegistry {
               + serviceInterface.getName());
     }
 
-    services
-        .computeIfAbsent(serviceInterface, k -> new CopyOnWriteArrayList<>())
-        .add(implementation);
+    SemanticVersion semVer = version != null ? SemanticVersion.parse(version) : null;
+    ServiceEntry entry = new ServiceEntry(implementation, semVer);
 
-    LOGGER.info(
-        "Registered service: {} -> {}",
-        serviceInterface.getName(),
-        implementation.getClass().getName());
+    services.computeIfAbsent(serviceInterface, k -> new CopyOnWriteArrayList<>()).add(entry);
+
+    if (version != null) {
+      LOGGER.info(
+          "Registered service: {} -> {} (version: {})",
+          serviceInterface.getName(),
+          implementation.getClass().getName(),
+          version);
+    } else {
+      LOGGER.info(
+          "Registered service: {} -> {}",
+          serviceInterface.getName(),
+          implementation.getClass().getName());
+    }
   }
 
   @Override
   public <T> Optional<T> getService(Class<T> serviceInterface) {
     Objects.requireNonNull(serviceInterface, "serviceInterface cannot be null");
 
-    CopyOnWriteArrayList<Object> implementations = services.get(serviceInterface);
-    if (implementations == null || implementations.isEmpty()) {
+    CopyOnWriteArrayList<ServiceEntry> entries = services.get(serviceInterface);
+    if (entries == null || entries.isEmpty()) {
       LOGGER.debug("No service found for interface: {}", serviceInterface.getName());
       return Optional.empty();
     }
 
     @SuppressWarnings("unchecked")
-    T service = (T) implementations.get(0);
+    T service = (T) entries.get(0).implementation;
     return Optional.of(service);
+  }
+
+  @Override
+  public <T> Optional<T> getService(Class<T> serviceInterface, String minVersion) {
+    Objects.requireNonNull(serviceInterface, "serviceInterface cannot be null");
+    Objects.requireNonNull(minVersion, "minVersion cannot be null");
+
+    SemanticVersion requiredVersion = SemanticVersion.parse(minVersion);
+
+    CopyOnWriteArrayList<ServiceEntry> entries = services.get(serviceInterface);
+    if (entries == null || entries.isEmpty()) {
+      LOGGER.debug("No service found for interface: {}", serviceInterface.getName());
+      return Optional.empty();
+    }
+
+    // Find first service with compatible version
+    for (ServiceEntry entry : entries) {
+      if (entry.version != null && entry.version.isCompatibleWith(requiredVersion)) {
+        @SuppressWarnings("unchecked")
+        T service = (T) entry.implementation;
+        LOGGER.debug(
+            "Found compatible service: {} version {} (required: {})",
+            serviceInterface.getName(),
+            entry.version,
+            minVersion);
+        return Optional.of(service);
+      }
+    }
+
+    LOGGER.debug(
+        "No compatible service found for interface: {} (required version: {})",
+        serviceInterface.getName(),
+        minVersion);
+    return Optional.empty();
   }
 
   @Override
   public <T> List<T> getAllServices(Class<T> serviceInterface) {
     Objects.requireNonNull(serviceInterface, "serviceInterface cannot be null");
 
-    CopyOnWriteArrayList<Object> implementations = services.get(serviceInterface);
-    if (implementations == null || implementations.isEmpty()) {
+    CopyOnWriteArrayList<ServiceEntry> entries = services.get(serviceInterface);
+    if (entries == null || entries.isEmpty()) {
       return new ArrayList<>();
     }
 
-    List<T> result = new ArrayList<>(implementations.size());
-    for (Object impl : implementations) {
+    List<T> result = new ArrayList<>(entries.size());
+    for (ServiceEntry entry : entries) {
       @SuppressWarnings("unchecked")
-      T service = (T) impl;
+      T service = (T) entry.implementation;
       result.add(service);
     }
     return result;
@@ -113,17 +172,25 @@ public class SimpleServiceRegistry implements ServiceRegistry {
     Objects.requireNonNull(serviceInterface, "serviceInterface cannot be null");
     Objects.requireNonNull(implementation, "implementation cannot be null");
 
-    CopyOnWriteArrayList<Object> implementations = services.get(serviceInterface);
-    if (implementations != null) {
-      boolean removed = implementations.remove(implementation);
-      if (removed) {
+    CopyOnWriteArrayList<ServiceEntry> entries = services.get(serviceInterface);
+    if (entries != null) {
+      ServiceEntry toRemove = null;
+      for (ServiceEntry entry : entries) {
+        if (entry.implementation.equals(implementation)) {
+          toRemove = entry;
+          break;
+        }
+      }
+
+      if (toRemove != null) {
+        entries.remove(toRemove);
         LOGGER.info(
             "Unregistered service: {} -> {}",
             serviceInterface.getName(),
             implementation.getClass().getName());
 
         // Remove empty list to save memory
-        if (implementations.isEmpty()) {
+        if (entries.isEmpty()) {
           services.remove(serviceInterface);
         }
       }

@@ -29,12 +29,12 @@ import org.checkerframework.checker.nullness.qual.NonNull;
  * <p>Example usage:
  *
  * <pre>{@code
- * // Register a service
+ * // Register a service with version
  * MyService impl = new MyServiceImpl();
- * registry.registerService(MyService.class, impl);
+ * registry.registerService(MyService.class, impl, "1.2.3");
  *
- * // Look up a service
- * Optional<MyService> service = registry.getService(MyService.class);
+ * // Look up a service with minimum version requirement
+ * Optional<MyService> service = registry.getService(MyService.class, "1.0.0");
  * service.ifPresent(s -> s.doSomething());
  * }</pre>
  *
@@ -55,6 +55,21 @@ public interface ServiceRegistry {
   <T> void registerService(@NonNull Class<T> serviceInterface, @NonNull T implementation);
 
   /**
+   * Registers a service implementation with a semantic version under the specified interface.
+   * Multiple implementations can be registered for the same interface.
+   *
+   * @param <T> the service interface type
+   * @param serviceInterface the interface class
+   * @param implementation the service implementation
+   * @param version the semantic version string (e.g., "1.2.3")
+   * @throws NullPointerException if any parameter is null
+   * @throws IllegalArgumentException if serviceInterface is not an interface, implementation does
+   *     not implement the interface, or version format is invalid
+   */
+  <T> void registerService(
+      @NonNull Class<T> serviceInterface, @NonNull T implementation, @NonNull String version);
+
+  /**
    * Returns the first registered service for the specified interface. If multiple services are
    * registered, returns the first one.
    *
@@ -63,6 +78,23 @@ public interface ServiceRegistry {
    * @return optional containing the service, or empty if none found
    */
   @NonNull <T> Optional<T> getService(@NonNull Class<T> serviceInterface);
+
+  /**
+   * Returns a service that satisfies the minimum version requirement. If multiple compatible
+   * services are registered, returns the first one that meets the version requirement.
+   *
+   * <p>Version compatibility follows semantic versioning rules: a service is compatible if it has
+   * the same major version and is greater than or equal to the minimum required version.
+   *
+   * @param <T> the service interface type
+   * @param serviceInterface the interface class
+   * @param minVersion the minimum required semantic version (e.g., "1.2.0")
+   * @return optional containing a compatible service, or empty if none found
+   * @throws NullPointerException if either parameter is null
+   * @throws IllegalArgumentException if minVersion format is invalid
+   */
+  @NonNull <T> Optional<T> getService(
+      @NonNull Class<T> serviceInterface, @NonNull String minVersion);
 
   /**
    * Returns all registered services for the specified interface.

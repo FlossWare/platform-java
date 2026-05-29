@@ -138,7 +138,17 @@ class ApplicationManagerTest {
           public <T> void registerService(Class<T> serviceInterface, T implementation) {}
 
           @Override
+          public <T> void registerService(
+              Class<T> serviceInterface, T implementation, String version) {}
+
+          @Override
           public <T> java.util.Optional<T> getService(Class<T> serviceInterface) {
+            return java.util.Optional.empty();
+          }
+
+          @Override
+          public <T> java.util.Optional<T> getService(
+              Class<T> serviceInterface, String minVersion) {
             return java.util.Optional.empty();
           }
 

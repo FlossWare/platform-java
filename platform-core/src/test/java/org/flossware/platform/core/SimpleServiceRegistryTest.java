@@ -261,4 +261,146 @@ class SimpleServiceRegistryTest {
     registry.registerService(TestService.class, new TestServiceImpl("test2"));
     assertEquals(2, registry.getInterfaceCount());
   }
+
+  // Version-related tests
+
+  @Test
+  void testRegisterServiceWithVersion() {
+    TestService service = new TestServiceImpl("versioned");
+    registry.registerService(TestService.class, service, "1.2.3");
+
+    Optional<TestService> retrieved = registry.getService(TestService.class);
+    assertTrue(retrieved.isPresent());
+    assertEquals("versioned", retrieved.get().getName());
+  }
+
+  @Test
+  void testGetServiceWithCompatibleVersion() {
+    TestService service = new TestServiceImpl("v1.5.0");
+    registry.registerService(TestService.class, service, "1.5.0");
+
+    // Request version 1.2.0 - should get 1.5.0 (compatible)
+    Optional<TestService> retrieved = registry.getService(TestService.class, "1.2.0");
+    assertTrue(retrieved.isPresent());
+    assertEquals("v1.5.0", retrieved.get().getName());
+  }
+
+  @Test
+  void testGetServiceWithIncompatibleMajorVersion() {
+    TestService service = new TestServiceImpl("v1.5.0");
+    registry.registerService(TestService.class, service, "1.5.0");
+
+    // Request version 2.0.0 - different major version
+    Optional<TestService> retrieved = registry.getService(TestService.class, "2.0.0");
+    assertFalse(retrieved.isPresent());
+  }
+
+  @Test
+  void testGetServiceWithTooHighMinorVersion() {
+    TestService service = new TestServiceImpl("v1.2.0");
+    registry.registerService(TestService.class, service, "1.2.0");
+
+    // Request version 1.5.0 - service version too old
+    Optional<TestService> retrieved = registry.getService(TestService.class, "1.5.0");
+    assertFalse(retrieved.isPresent());
+  }
+
+  @Test
+  void testGetServiceWithExactVersionMatch() {
+    TestService service = new TestServiceImpl("v2.3.4");
+    registry.registerService(TestService.class, service, "2.3.4");
+
+    Optional<TestService> retrieved = registry.getService(TestService.class, "2.3.4");
+    assertTrue(retrieved.isPresent());
+    assertEquals("v2.3.4", retrieved.get().getName());
+  }
+
+  @Test
+  void testGetServiceFindsFirstCompatibleVersion() {
+    TestService service1 = new TestServiceImpl("v1.0.0");
+    TestService service2 = new TestServiceImpl("v1.5.0");
+    TestService service3 = new TestServiceImpl("v2.0.0");
+
+    registry.registerService(TestService.class, service1, "1.0.0");
+    registry.registerService(TestService.class, service2, "1.5.0");
+    registry.registerService(TestService.class, service3, "2.0.0");
+
+    // Request 1.2.0 - should get 1.5.0 (first compatible)
+    Optional<TestService> retrieved = registry.getService(TestService.class, "1.2.0");
+    assertTrue(retrieved.isPresent());
+    assertEquals("v1.5.0", retrieved.get().getName());
+  }
+
+  @Test
+  void testGetServiceWithVersionIgnoresUnversionedServices() {
+    TestService unversioned = new TestServiceImpl("unversioned");
+    TestService versioned = new TestServiceImpl("v1.5.0");
+
+    registry.registerService(TestService.class, unversioned); // No version
+    registry.registerService(TestService.class, versioned, "1.5.0");
+
+    Optional<TestService> retrieved = registry.getService(TestService.class, "1.2.0");
+    assertTrue(retrieved.isPresent());
+    assertEquals("v1.5.0", retrieved.get().getName());
+  }
+
+  @Test
+  void testGetServiceWithVersionReturnsEmptyWhenNoVersionedServices() {
+    TestService unversioned = new TestServiceImpl("unversioned");
+    registry.registerService(TestService.class, unversioned); // No version
+
+    Optional<TestService> retrieved = registry.getService(TestService.class, "1.0.0");
+    assertFalse(retrieved.isPresent());
+  }
+
+  @Test
+  void testRegisterServiceWithInvalidVersionThrows() {
+    TestService service = new TestServiceImpl("test");
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          registry.registerService(TestService.class, service, "invalid");
+        });
+  }
+
+  @Test
+  void testGetServiceWithInvalidMinVersionThrows() {
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          registry.getService(TestService.class, "invalid");
+        });
+  }
+
+  @Test
+  void testGetServiceWithNullMinVersionThrows() {
+    assertThrows(
+        NullPointerException.class,
+        () -> {
+          registry.getService(TestService.class, null);
+        });
+  }
+
+  @Test
+  void testUnregisterVersionedService() {
+    TestService service = new TestServiceImpl("v1.0.0");
+    registry.registerService(TestService.class, service, "1.0.0");
+
+    registry.unregisterService(TestService.class, service);
+
+    Optional<TestService> retrieved = registry.getService(TestService.class, "1.0.0");
+    assertFalse(retrieved.isPresent());
+  }
+
+  @Test
+  void testGetAllServicesIncludesVersionedServices() {
+    TestService service1 = new TestServiceImpl("v1.0.0");
+    TestService service2 = new TestServiceImpl("v2.0.0");
+
+    registry.registerService(TestService.class, service1, "1.0.0");
+    registry.registerService(TestService.class, service2, "2.0.0");
+
+    List<TestService> services = registry.getAllServices(TestService.class);
+    assertEquals(2, services.size());
+  }
 }
