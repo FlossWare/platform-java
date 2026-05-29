@@ -71,6 +71,7 @@ public class ApplicationManager implements PlatformManager {
   private final ContainerLauncher containerLauncher;
   private final org.flossware.platform.vm.VmLauncher vmLauncher;
   private final RestartPolicyParser restartPolicyParser;
+  private final HealthCheckConfigParser healthCheckConfigParser;
 
   /** Creates a new application manager without messaging support. */
   public ApplicationManager() {
@@ -94,6 +95,7 @@ public class ApplicationManager implements PlatformManager {
     this.nativeProcessLauncher = new NativeProcessLauncher();
     this.containerLauncher = new ContainerLauncher();
     this.restartPolicyParser = new RestartPolicyParser();
+    this.healthCheckConfigParser = new HealthCheckConfigParser();
 
     // Initialize VM launcher
     org.flossware.platform.vm.VmLauncher tempVmLauncher = null;
@@ -256,6 +258,21 @@ public class ApplicationManager implements PlatformManager {
           context.setRestartManager(restartManager);
           restartManager.start();
           LOGGER.info("[{}] Restart manager configured: {}", appId, restartPolicy);
+        }
+
+        // Create and configure health checker if health checks are enabled
+        Optional<HealthChecker.HealthCheckConfig> healthCheckConfigOpt =
+            healthCheckConfigParser.parse(descriptor);
+        if (healthCheckConfigOpt.isPresent()) {
+          HealthChecker.HealthCheckConfig healthCheckConfig = healthCheckConfigOpt.get();
+          HealthChecker healthChecker = new HealthChecker(context, healthCheckConfig);
+          context.setHealthChecker(healthChecker);
+          healthChecker.start();
+          LOGGER.info(
+              "[{}] Health checks configured: type={}, interval={}s",
+              appId,
+              healthCheckConfig.getType(),
+              healthCheckConfig.getIntervalSeconds());
         }
 
         // Register with dependency resolver
@@ -634,6 +651,15 @@ public class ApplicationManager implements PlatformManager {
                 restartManager -> {
                   restartManager.stop();
                   LOGGER.info("[{}] Restart manager stopped", applicationId);
+                });
+
+        // Shutdown health checker if present
+        context
+            .getHealthChecker()
+            .ifPresent(
+                healthChecker -> {
+                  healthChecker.stop();
+                  LOGGER.info("[{}] Health checker stopped", applicationId);
                 });
 
         // Shutdown resource monitor

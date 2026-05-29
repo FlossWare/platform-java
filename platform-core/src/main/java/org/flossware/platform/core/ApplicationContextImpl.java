@@ -60,6 +60,7 @@ public final class ApplicationContextImpl implements ApplicationContext {
   private volatile org.flossware.platform.vm.VmLauncher.VmInfo
       vmInfo; // Non-null for VM applications
   private volatile RestartManager restartManager; // Non-null if auto-restart is enabled
+  private volatile HealthChecker healthChecker; // Non-null if health checks are enabled
   private final Instant deployedAt; // Timestamp when application was deployed
 
   private ApplicationContextImpl(Builder builder) {
@@ -238,6 +239,24 @@ public final class ApplicationContextImpl implements ApplicationContext {
    */
   void setRestartManager(RestartManager restartManager) {
     this.restartManager = restartManager;
+  }
+
+  /**
+   * Returns the health checker for this application. Package-private for use by ApplicationManager.
+   *
+   * @return Optional containing the health checker, or empty if health checks are disabled
+   */
+  Optional<HealthChecker> getHealthChecker() {
+    return Optional.ofNullable(healthChecker);
+  }
+
+  /**
+   * Sets the health checker for this application. Package-private for use by ApplicationManager.
+   *
+   * @param healthChecker the health checker
+   */
+  void setHealthChecker(HealthChecker healthChecker) {
+    this.healthChecker = healthChecker;
   }
 
   /**

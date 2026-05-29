@@ -39,7 +39,10 @@ class RestartPolicyParserTest {
   @Test
   void testParseNoPolicy() {
     ApplicationDescriptor descriptor =
-        ApplicationDescriptor.builder().applicationId("test-app").mainClass("com.example.App").build();
+        ApplicationDescriptor.builder()
+            .applicationId("test-app")
+            .mainClass("com.example.App")
+            .build();
 
     Optional<RestartPolicy> result = parser.parse(descriptor);
 
@@ -58,8 +61,7 @@ class RestartPolicyParserTest {
     Optional<RestartPolicy> result = parser.parse(descriptor);
 
     assertTrue(result.isPresent());
-    assertEquals(
-        RestartPolicy.RestartCondition.NEVER, result.get().getCondition());
+    assertEquals(RestartPolicy.RestartCondition.NEVER, result.get().getCondition());
   }
 
   @Test
@@ -74,8 +76,7 @@ class RestartPolicyParserTest {
     Optional<RestartPolicy> result = parser.parse(descriptor);
 
     assertTrue(result.isPresent());
-    assertEquals(
-        RestartPolicy.RestartCondition.ALWAYS, result.get().getCondition());
+    assertEquals(RestartPolicy.RestartCondition.ALWAYS, result.get().getCondition());
     assertEquals(Integer.MAX_VALUE, result.get().getMaxRetries());
   }
 
@@ -132,8 +133,7 @@ class RestartPolicyParserTest {
     Optional<RestartPolicy> result = parser.parse(descriptor);
 
     assertTrue(result.isPresent());
-    assertEquals(
-        RestartPolicy.RestartCondition.ON_FAILURE, result.get().getCondition());
+    assertEquals(RestartPolicy.RestartCondition.ON_FAILURE, result.get().getCondition());
   }
 
   @Test
@@ -148,8 +148,7 @@ class RestartPolicyParserTest {
     Optional<RestartPolicy> result = parser.parse(descriptor);
 
     assertTrue(result.isPresent());
-    assertEquals(
-        RestartPolicy.RestartCondition.NEVER, result.get().getCondition());
+    assertEquals(RestartPolicy.RestartCondition.NEVER, result.get().getCondition());
   }
 
   @Test
@@ -214,7 +213,6 @@ class RestartPolicyParserTest {
     Optional<RestartPolicy> result = parser.parse(descriptor);
 
     assertTrue(result.isPresent());
-    assertEquals(
-        RestartPolicy.RestartCondition.ALWAYS, result.get().getCondition());
+    assertEquals(RestartPolicy.RestartCondition.ALWAYS, result.get().getCondition());
   }
 }

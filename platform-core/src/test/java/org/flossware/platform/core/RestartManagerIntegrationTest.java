@@ -23,8 +23,8 @@ import java.io.File;
 import java.net.URI;
 
 import org.flossware.platform.api.ApplicationDescriptor;
-import org.flossware.platform.api.RestartPolicy;
 import org.flossware.platform.api.ResourceConfig;
+import org.flossware.platform.api.RestartPolicy;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -70,7 +70,8 @@ class RestartManagerIntegrationTest {
     ApplicationContextImpl context =
         (ApplicationContextImpl) manager.getApplicationContext("no-restart-app");
     assertNotNull(context);
-    assertFalse(context.getRestartManager().isPresent(),
+    assertFalse(
+        context.getRestartManager().isPresent(),
         "Should not create restart manager when policy not configured");
   }
 
@@ -91,7 +92,8 @@ class RestartManagerIntegrationTest {
     ApplicationContextImpl context =
         (ApplicationContextImpl) manager.getApplicationContext("restart-app");
     assertNotNull(context);
-    assertTrue(context.getRestartManager().isPresent(),
+    assertTrue(
+        context.getRestartManager().isPresent(),
         "Should create restart manager when policy configured");
 
     RestartManager restartManager = context.getRestartManager().get();
@@ -119,8 +121,7 @@ class RestartManagerIntegrationTest {
     assertTrue(context.getRestartManager().isPresent());
 
     RestartManager restartManager = context.getRestartManager().get();
-    assertEquals(
-        RestartPolicy.RestartCondition.ALWAYS, restartManager.getPolicy().getCondition());
+    assertEquals(RestartPolicy.RestartCondition.ALWAYS, restartManager.getPolicy().getCondition());
   }
 
   @Test
@@ -142,8 +143,7 @@ class RestartManagerIntegrationTest {
     assertTrue(context.getRestartManager().isPresent());
 
     RestartManager restartManager = context.getRestartManager().get();
-    assertEquals(
-        RestartPolicy.RestartCondition.NEVER, restartManager.getPolicy().getCondition());
+    assertEquals(RestartPolicy.RestartCondition.NEVER, restartManager.getPolicy().getCondition());
   }
 
   @Test
