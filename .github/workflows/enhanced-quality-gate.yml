@@ -1,0 +1,327 @@
+name: Enhanced Quality Gate
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run nightly for dependency scanning
+    - cron: '0 2 * * *'
+
+permissions:
+  contents: read
+  security-events: write
+  issues: write
+  pull-requests: write
+
+env:
+  JAVA_VERSION: '21'
+  MAVEN_OPTS: -Xmx2g
+
+jobs:
+  # Fast feedback - unit tests only
+  fast-feedback:
+    name: Fast Feedback (Unit Tests)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Run unit tests only
+        run: mvn test -Dtest.groups=unit -B
+
+      - name: Upload unit test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-results
+          path: '**/target/surefire-reports/**'
+          retention-days: 30
+
+  # Code formatting check
+  code-format:
+    name: Code Formatting (Spotless)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Check code formatting
+        run: mvn spotless:check -B
+
+      - name: Comment on PR if formatting fails
+        if: failure() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '❌ **Code formatting check failed**\n\nPlease run `mvn spotless:apply` to fix formatting issues.'
+            })
+
+  # Code style check
+  code-style:
+    name: Code Style (Checkstyle)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Run Checkstyle
+        run: mvn checkstyle:check -B
+
+      - name: Upload Checkstyle report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: checkstyle-report
+          path: '**/target/checkstyle-result.xml'
+          retention-days: 30
+
+  # Security tests
+  security-tests:
+    name: Security Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Run security tests
+        run: mvn test -Dtest.groups=security -B
+
+      - name: Upload security test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-test-results
+          path: '**/target/surefire-reports/**'
+          retention-days: 30
+
+  # Full test suite with coverage
+  full-test-suite:
+    name: Full Test Suite + Coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [fast-feedback]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # For better coverage analysis
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Run all tests with coverage
+        run: mvn clean test jacoco:report -B
+
+      - name: Check coverage threshold
+        run: mvn jacoco:check -B
+
+      - name: Parse coverage metrics
+        id: coverage
+        run: |
+          INSTRUCTION=$(grep -oP 'Total.*?<td class="ctr2">(\d+)%' target/site/jacoco/index.html | grep -oP '\d+' | head -1 || echo "0")
+          BRANCH=$(grep -oP 'Total.*?<td class="ctr2">(\d+)%' target/site/jacoco/index.html | grep -oP '\d+' | sed -n '2p' || echo "0")
+          echo "instruction_coverage=$INSTRUCTION" >> $GITHUB_OUTPUT
+          echo "branch_coverage=$BRANCH" >> $GITHUB_OUTPUT
+          echo "📊 Coverage: Instructions ${INSTRUCTION}%, Branches ${BRANCH}%"
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: '**/target/site/jacoco/jacoco.xml'
+          flags: unittests
+          name: codecov-umbrella
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: '**/target/site/jacoco/**'
+          retention-days: 30
+
+      - name: Comment coverage on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const instruction = '${{ steps.coverage.outputs.instruction_coverage }}';
+            const branch = '${{ steps.coverage.outputs.branch_coverage }}';
+            const threshold = 60;
+            const emoji = instruction >= threshold ? '✅' : '❌';
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `${emoji} **Code Coverage Report**\n\n- Instruction Coverage: **${instruction}%** (threshold: ${threshold}%)\n- Branch Coverage: **${branch}%** (threshold: ${threshold}%)`
+            })
+
+  # OWASP Dependency Check
+  dependency-security:
+    name: Dependency Security Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Only run on schedule and main branch to avoid rate limits
+    if: github.event_name == 'schedule' || github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Cache OWASP NVD data
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository/org/owasp/dependency-check-data
+          key: ${{ runner.os }}-owasp-nvd-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-owasp-nvd-
+
+      - name: Run OWASP Dependency Check
+        env:
+          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
+        run: mvn dependency-check:check -B
+        continue-on-error: true
+
+      - name: Upload OWASP report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: owasp-dependency-check-report
+          path: '**/target/dependency-check-report.html'
+          retention-days: 30
+
+      - name: Create issue for HIGH/CRITICAL vulnerabilities
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const title = '🔒 Security: HIGH/CRITICAL vulnerabilities detected';
+            const body = `OWASP Dependency Check has detected HIGH or CRITICAL vulnerabilities.\n\n` +
+                        `📊 [View detailed report](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})\n\n` +
+                        `Please review and address these vulnerabilities.`;
+
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: title,
+              body: body,
+              labels: ['security', 'dependencies']
+            })
+
+  # Build validation
+  build:
+    name: Build All Modules
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [code-format, code-style]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build all modules
+        run: mvn clean install -DskipTests -B
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: '**/target/*.jar'
+          retention-days: 7
+
+  # Quality gate summary
+  quality-gate-summary:
+    name: Quality Gate Summary
+    runs-on: ubuntu-latest
+    needs: [fast-feedback, code-format, code-style, security-tests, full-test-suite, build]
+    if: always()
+
+    steps:
+      - name: Check all jobs passed
+        run: |
+          if [[ "${{ needs.fast-feedback.result }}" != "success" || \
+                "${{ needs.code-format.result }}" != "success" || \
+                "${{ needs.code-style.result }}" != "success" || \
+                "${{ needs.security-tests.result }}" != "success" || \
+                "${{ needs.full-test-suite.result }}" != "success" || \
+                "${{ needs.build.result }}" != "success" ]]; then
+            echo "❌ Quality gate FAILED"
+            exit 1
+          else
+            echo "✅ Quality gate PASSED"
+          fi
+
+      - name: Post summary
+        if: always()
+        run: |
+          echo "## 📊 Quality Gate Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Fast Feedback | ${{ needs.fast-feedback.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Code Formatting | ${{ needs.code-format.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Code Style | ${{ needs.code-style.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Security Tests | ${{ needs.security-tests.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Full Test Suite | ${{ needs.full-test-suite.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build | ${{ needs.build.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
