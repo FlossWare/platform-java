@@ -77,7 +77,8 @@ public interface ServiceRegistry {
    * @param serviceInterface the interface class
    * @return optional containing the service, or empty if none found
    */
-  @NonNull <T> Optional<T> getService(@NonNull Class<T> serviceInterface);
+  @NonNull
+  <T> Optional<T> getService(@NonNull Class<T> serviceInterface);
 
   /**
    * Returns a service that satisfies the minimum version requirement. If multiple compatible
@@ -93,7 +94,8 @@ public interface ServiceRegistry {
    * @throws NullPointerException if either parameter is null
    * @throws IllegalArgumentException if minVersion format is invalid
    */
-  @NonNull <T> Optional<T> getService(
+  @NonNull
+  <T> Optional<T> getService(
       @NonNull Class<T> serviceInterface, @NonNull String minVersion);
 
   /**
@@ -103,7 +105,8 @@ public interface ServiceRegistry {
    * @param serviceInterface the interface class
    * @return list of all registered services, empty if none found
    */
-  @NonNull <T> List<T> getAllServices(@NonNull Class<T> serviceInterface);
+  @NonNull
+  <T> List<T> getAllServices(@NonNull Class<T> serviceInterface);
 
   /**
    * Unregisters a specific service implementation.
