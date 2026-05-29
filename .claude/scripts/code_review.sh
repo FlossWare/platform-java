@@ -76,8 +76,9 @@ if [ $JAVA_COUNT -gt 0 ]; then
     } > "$REVIEW_OUTPUT_DIR/java-security-scans.txt"
 
     # Filter out comment lines
-    SECURITY_COUNT=$(grep ".java:" "$REVIEW_OUTPUT_DIR/java-security-scans.txt" 2>/dev/null | grep -v "^\S*:\s*/\|^\S*:\s*\*" | wc -l || echo "0")
-    if [ "$SECURITY_COUNT" -gt 0 ]; then
+    SECURITY_COUNT=$(grep ".java:" "$REVIEW_OUTPUT_DIR/java-security-scans.txt" 2>/dev/null | grep -v "^\S*:\s*/\|^\S*:\s*\*" | wc -l 2>/dev/null || echo "0")
+    SECURITY_COUNT=$(echo "$SECURITY_COUNT" | tr -d ' \n')
+    if [ "$SECURITY_COUNT" -gt 0 ] 2>/dev/null; then
         echo "✗ Found $SECURITY_COUNT security patterns in Java code"
     else
         echo "✓ Java Security: PASSED"
@@ -98,7 +99,8 @@ if [ $PYTHON_COUNT -gt 0 ]; then
     } > "$REVIEW_OUTPUT_DIR/python-security-scans.txt"
 
     PY_SECURITY_COUNT=$(grep -c ".py:" "$REVIEW_OUTPUT_DIR/python-security-scans.txt" 2>/dev/null || echo "0")
-    if [ "$PY_SECURITY_COUNT" -gt 0 ]; then
+    PY_SECURITY_COUNT=$(echo "$PY_SECURITY_COUNT" | tr -d ' \n')
+    if [ "$PY_SECURITY_COUNT" -gt 0 ] 2>/dev/null; then
         echo "✗ Found $PY_SECURITY_COUNT security patterns in Python code"
     else
         echo "✓ Python Security Patterns: PASSED"
