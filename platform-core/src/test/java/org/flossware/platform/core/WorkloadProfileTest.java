@@ -53,6 +53,7 @@ class WorkloadProfileTest {
     ApplicationDescriptor descriptor =
         ApplicationDescriptor.builder()
             .applicationId("native-app")
+            .mainClass("") // Not applicable for native apps
             .property("native.executable", "/usr/bin/postgres")
             .resourceConfig(ResourceConfig.builder().maxThreads(4).maxHeapMB(8192).build())
             .build();
@@ -71,6 +72,7 @@ class WorkloadProfileTest {
     ApplicationDescriptor descriptor =
         ApplicationDescriptor.builder()
             .applicationId("container-app")
+            .mainClass("") // Not applicable for container images
             .property("container.image", "nginx:latest")
             .build();
 
@@ -86,6 +88,7 @@ class WorkloadProfileTest {
     ApplicationDescriptor descriptor =
         ApplicationDescriptor.builder()
             .applicationId("kernel-app")
+            .mainClass("") // Not applicable for VM apps
             .property("vm.required", "true")
             .build();
 
@@ -171,6 +174,7 @@ class WorkloadProfileTest {
     ApplicationDescriptor descriptor =
         ApplicationDescriptor.builder()
             .applicationId("native-app")
+            .mainClass("") // Not applicable for native apps
             .property("native.executable", "/bin/sh")
             .resourceConfig(ResourceConfig.builder().maxHeapMB(512).build())
             .build();

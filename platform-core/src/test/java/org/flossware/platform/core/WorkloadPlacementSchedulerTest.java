@@ -84,6 +84,7 @@ class WorkloadPlacementSchedulerTest {
     ApplicationDescriptor descriptor =
         ApplicationDescriptor.builder()
             .applicationId("postgres")
+            .mainClass("") // Not applicable for native executables
             .property("native.executable", "/usr/bin/postgres")
             .resourceConfig(ResourceConfig.builder().maxHeapMB(16384).build())
             .build();
@@ -99,6 +100,7 @@ class WorkloadPlacementSchedulerTest {
     ApplicationDescriptor descriptor =
         ApplicationDescriptor.builder()
             .applicationId("nginx")
+            .mainClass("") // Not applicable for container images
             .property("container.image", "nginx:latest")
             .build();
 
@@ -258,6 +260,7 @@ class WorkloadPlacementSchedulerTest {
     ApplicationDescriptor descriptor =
         ApplicationDescriptor.builder()
             .applicationId("unknown-app")
+            .mainClass("") // Not a Java app
             .resourceConfig(ResourceConfig.builder().maxHeapMB(1024).build())
             .build();
 

@@ -89,11 +89,16 @@ public final class WorkloadProfile {
     builder.applicationId = descriptor.getApplicationId();
 
     // Determine workload type
-    builder.isJavaApp = descriptor.getMainClass() != null && !descriptor.getMainClass().isEmpty();
     builder.isNativeApp =
         descriptor.getProperties().get("native.executable") != null
             || descriptor.getProperties().get("nativeImage") != null;
     builder.isContainerImage = descriptor.getProperties().get("container.image") != null;
+    // Only consider it a Java app if it has a mainClass and is NOT a native/container app
+    builder.isJavaApp =
+        descriptor.getMainClass() != null
+            && !descriptor.getMainClass().isEmpty()
+            && !builder.isNativeApp
+            && !builder.isContainerImage;
 
     // Extract resource requirements
     if (descriptor.getResourceConfig() != null) {
