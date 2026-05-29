@@ -141,7 +141,7 @@ public class WorkloadPlacementScheduler {
         logger.debug("[{}] Scheduling workload placement", applicationId);
 
         // Check for explicit backend override
-        String explicitBackend = descriptor.getProperty("deploymentTarget");
+        String explicitBackend = descriptor.getProperties().get("deploymentTarget");
         if (explicitBackend != null && !explicitBackend.isEmpty()) {
             try {
                 ExecutionBackend backend = ExecutionBackend.fromId(explicitBackend);

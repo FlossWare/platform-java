@@ -88,14 +88,14 @@ public final class WorkloadProfile {
 
         // Determine workload type
         builder.isJavaApp = descriptor.getMainClass() != null && !descriptor.getMainClass().isEmpty();
-        builder.isNativeApp = descriptor.getProperty("native.executable") != null ||
-                              descriptor.getProperty("nativeImage") != null;
-        builder.isContainerImage = descriptor.getProperty("container.image") != null;
+        builder.isNativeApp = descriptor.getProperties().get("native.executable") != null ||
+                              descriptor.getProperties().get("nativeImage") != null;
+        builder.isContainerImage = descriptor.getProperties().get("container.image") != null;
 
         // Extract resource requirements
-        if (descriptor.getResources() != null) {
-            builder.cpuCores = descriptor.getResources().getCpu();
-            builder.memoryMB = descriptor.getResources().getMemory();
+        if (descriptor.getResourceConfig() != null) {
+            builder.cpuCores = descriptor.getResourceConfig().getMaxThreads().orElse(1);
+            builder.memoryMB = descriptor.getResourceConfig().getMaxHeapMB().orElse(512L).intValue();
         } else {
             // Defaults if not specified
             builder.cpuCores = 1;
@@ -103,14 +103,14 @@ public final class WorkloadProfile {
         }
 
         // Check isolation requirements
-        builder.needsKernelAccess = "true".equalsIgnoreCase(descriptor.getProperty("vm.required")) ||
-                                    "true".equalsIgnoreCase(descriptor.getProperty("kernel.access"));
+        builder.needsKernelAccess = "true".equalsIgnoreCase(descriptor.getProperties().get("vm.required")) ||
+                                    "true".equalsIgnoreCase(descriptor.getProperties().get("kernel.access"));
 
-        builder.requiresVmIsolation = "true".equalsIgnoreCase(descriptor.getProperty("vm.required")) ||
-                                      "true".equalsIgnoreCase(descriptor.getProperty("security.vm.isolated"));
+        builder.requiresVmIsolation = "true".equalsIgnoreCase(descriptor.getProperties().get("vm.required")) ||
+                                      "true".equalsIgnoreCase(descriptor.getProperties().get("security.vm.isolated"));
 
         // Extract scale requirements
-        String replicasStr = descriptor.getProperty("replicas");
+        String replicasStr = descriptor.getProperties().get("replicas");
         if (replicasStr != null) {
             try {
                 builder.requiredReplicas = Integer.parseInt(replicasStr);
