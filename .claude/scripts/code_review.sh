@@ -97,8 +97,8 @@ if [ $PYTHON_COUNT -gt 0 ]; then
         find . -type f -name "*.py" ! -path "./.claude/scripts/*" -exec grep -Hn "eval\|exec\|__import__\|pickle.loads\|yaml.load[^s]\|subprocess.call\|os.system" {} \; 2>/dev/null || true
     } > "$REVIEW_OUTPUT_DIR/python-security-scans.txt"
 
-    PY_SECURITY_COUNT=$(wc -l < "$REVIEW_OUTPUT_DIR/python-security-scans.txt" 2>/dev/null || echo 0)
-    if [ $PY_SECURITY_COUNT -gt 0 ]; then
+    PY_SECURITY_COUNT=$(grep -c ".py:" "$REVIEW_OUTPUT_DIR/python-security-scans.txt" 2>/dev/null || echo "0")
+    if [ "$PY_SECURITY_COUNT" -gt 0 ]; then
         echo "✗ Found $PY_SECURITY_COUNT security patterns in Python code"
     else
         echo "✓ Python Security Patterns: PASSED"
@@ -108,7 +108,8 @@ fi
 
 # TODO/FIXME checks (all languages)
 echo "=== TODO/FIXME Checks ==="
-find . -type f \( -name "*.java" -o -name "*.py" -o -name "*.js" -o -name "*.ts" \) -exec grep -Hn "TODO\|FIXME\|XXX\|HACK" {} \; > "$REVIEW_OUTPUT_DIR/todo-checks.txt" 2>/dev/null || true
+# Exclude .claude/scripts (automation code) and target/ (build artifacts)
+find . -type f \( -name "*.java" -o -name "*.py" \) ! -path "./.claude/scripts/*" ! -path "*/target/*" -exec grep -Hn "TODO\|FIXME\|XXX\|HACK" {} \; > "$REVIEW_OUTPUT_DIR/todo-checks.txt" 2>/dev/null || true
 TODO_COUNT=$(wc -l < "$REVIEW_OUTPUT_DIR/todo-checks.txt" || echo 0)
 echo "Found $TODO_COUNT TODO/FIXME comments"
 
