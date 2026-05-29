@@ -37,7 +37,7 @@ import java.util.regex.Pattern;
  *
  * <p>Thread-safe and stateless.
  */
-class ArgumentParser {
+final class ArgumentParser {
 
   // Pattern that handles escaped quotes: \" and \' within quoted strings
   private static final Pattern ARG_PATTERN =

@@ -319,8 +319,12 @@ public final class WorkloadProfile {
         .append(", replicas=")
         .append(requiredReplicas);
 
-    if (needsKernelAccess) sb.append(", kernelAccess");
-    if (requiresVmIsolation) sb.append(", vmRequired");
+    if (needsKernelAccess) {
+      sb.append(", kernelAccess");
+    }
+    if (requiresVmIsolation) {
+      sb.append(", vmRequired");
+    }
 
     sb.append('}');
     return sb.toString();

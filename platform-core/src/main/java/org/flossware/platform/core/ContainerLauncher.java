@@ -88,6 +88,12 @@ public class ContainerLauncher {
       return this == DOCKER || this == PODMAN || this == CONTAINERD;
     }
 
+    /**
+     * Converts a string to a ContainerRuntime enum.
+     *
+     * @param runtime the runtime name (case-insensitive)
+     * @return the matching ContainerRuntime, or DOCKER as default
+     */
     public static ContainerRuntime fromString(String runtime) {
       if (runtime == null) {
         return DOCKER; // Default to Docker
@@ -575,6 +581,15 @@ public class ContainerLauncher {
     private Thread outputReaderThread;
     private Process logsProcess;
 
+    /**
+     * Creates container information.
+     *
+     * @param process the container process
+     * @param containerId the container ID
+     * @param containerName the container name
+     * @param runtime the container runtime used
+     * @param properties container properties including namespace config
+     */
     public ContainerInfo(
         Process process,
         String containerId,

@@ -17,10 +17,17 @@
 
 package org.flossware.platform.core;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.flossware.platform.api.*;
+import org.flossware.platform.api.Application;
+import org.flossware.platform.api.ApplicationDescriptor;
+import org.flossware.platform.api.ApplicationState;
+import org.flossware.platform.api.ReloadableApplication;
 import org.flossware.platform.classloader.IsolatedClassLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

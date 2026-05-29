@@ -43,7 +43,7 @@ class ClassLoaderVersion {
    * @throws IllegalArgumentException if version is negative
    * @throws NullPointerException if classLoader is null
    */
-  public ClassLoaderVersion(int version, ClassLoader classLoader) {
+  ClassLoaderVersion(int version, ClassLoader classLoader) {
     if (version < 0) {
       throw new IllegalArgumentException("Version must be non-negative, got: " + version);
     }

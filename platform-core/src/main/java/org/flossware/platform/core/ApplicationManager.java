@@ -18,11 +18,25 @@
 package org.flossware.platform.core;
 
 import java.lang.reflect.Method;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.flossware.platform.api.*;
+import org.flossware.platform.api.Application;
+import org.flossware.platform.api.ApplicationContext;
+import org.flossware.platform.api.ApplicationDescriptor;
+import org.flossware.platform.api.ApplicationState;
+import org.flossware.platform.api.MessageBus;
+import org.flossware.platform.api.PlatformManager;
+import org.flossware.platform.api.ResourceConfig;
+import org.flossware.platform.api.ResourceQuota;
+import org.flossware.platform.api.ServiceRegistry;
+import org.flossware.platform.api.VolumeManager;
 import org.flossware.platform.classloader.IsolatedClassLoader;
 import org.flossware.platform.monitoring.ApplicationResourceMonitor;
 import org.flossware.platform.monitoring.ResourceEnforcer;
@@ -90,7 +104,8 @@ public class ApplicationManager implements PlatformManager {
     this.vmLauncher = tempVmLauncher;
 
     LOGGER.info(
-        "ApplicationManager initialized with fine-grained locking, dependency resolution, hot reload, native process, container, and VM support");
+        "ApplicationManager initialized with fine-grained locking, "
+            + "dependency resolution, hot reload, native process, container, and VM support");
   }
 
   /**
@@ -299,9 +314,8 @@ public class ApplicationManager implements PlatformManager {
 
           context.setState(ApplicationState.RUNNING);
           LOGGER.info("[{}] VM started successfully (UUID: {})", applicationId, vmInfo.getUuid());
-        }
-        // Check if this is a containerized application
-        else if (isContainerized(descriptor)) {
+        } else if (isContainerized(descriptor)) {
+          // Check if this is a containerized application
           // Launch as container
           LOGGER.info("[{}] Launching as container", applicationId);
           ContainerLauncher.ContainerInfo containerInfo =
@@ -313,9 +327,8 @@ public class ApplicationManager implements PlatformManager {
               "[{}] Container started successfully (ID: {})",
               applicationId,
               containerInfo.getContainerId());
-        }
-        // Check if this is a native image application
-        else if (descriptor.isNativeImage()) {
+        } else if (descriptor.isNativeImage()) {
+          // Check if this is a native image application
           // Launch as native process
           LOGGER.info("[{}] Launching as native process", applicationId);
           java.nio.file.Path workingDir =
@@ -423,9 +436,8 @@ public class ApplicationManager implements PlatformManager {
           LOGGER.info("[{}] Stopping virtual machine", applicationId);
           vmLauncher.stop(applicationId, vmInfo.get(), true);
           context.setVmInfo(null);
-        }
-        // Check if this is a containerized application
-        else {
+        } else {
+          // Check if this is a containerized application
           Optional<ContainerLauncher.ContainerInfo> containerInfo = context.getContainerInfo();
           if (containerInfo.isPresent()) {
             // Stop container
@@ -433,9 +445,8 @@ public class ApplicationManager implements PlatformManager {
             containerLauncher.stop(
                 applicationId, containerInfo.get(), 10000); // 10 second grace period
             context.setContainerInfo(null);
-          }
-          // Check if this is a native process
-          else {
+          } else {
+            // Check if this is a native process
             Optional<Process> nativeProcess = context.getNativeProcess();
             if (nativeProcess.isPresent()) {
               // Stop native process
