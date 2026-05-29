@@ -19,6 +19,18 @@
           "patterns": [
             "*"
           ]
+        },
+        {
+          "name": "Write",
+          "patterns": [
+            "*"
+          ]
+        },
+        {
+          "name": "Edit",
+          "patterns": [
+            "*"
+          ]
         }
       ]
     }
