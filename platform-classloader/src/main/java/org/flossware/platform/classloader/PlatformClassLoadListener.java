@@ -17,8 +17,8 @@
 
 package org.flossware.platform.classloader;
 
-import org.flossware.jclassloader.lifecycle.ClassLoadEvent;
-import org.flossware.jclassloader.lifecycle.ClassLoaderLifecycleListener;
+import org.flossware.classloader.lifecycle.ClassLoadEvent;
+import org.flossware.classloader.lifecycle.ClassLoaderLifecycleListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

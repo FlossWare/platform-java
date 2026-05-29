@@ -22,9 +22,9 @@ import java.net.URI;
 import java.util.Map;
 import java.util.Objects;
 
-import org.flossware.jclassloader.ApplicationClassLoader;
-import org.flossware.jclassloader.AuthConfig;
-import org.flossware.jclassloader.lifecycle.ResourceTrackingListener;
+import org.flossware.classloader.ApplicationClassLoader;
+import org.flossware.classloader.AuthConfig;
+import org.flossware.classloader.lifecycle.ResourceTrackingListener;
 import org.flossware.platform.api.ApplicationDescriptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -93,7 +93,7 @@ public final class IsolatedClassLoader extends ClassLoader implements AutoClosea
       File cacheDirFile = new File(cacheDir);
       cacheDirFile.mkdirs();
       try {
-        builder.cache(new org.flossware.jclassloader.cache.FileSystemCache(cacheDir));
+        builder.cache(new org.flossware.classloader.cache.FileSystemCache(cacheDir));
         LOGGER.info("[{}] Initialized class cache at: {}", applicationId, cacheDir);
       } catch (java.io.IOException e) {
         LOGGER.warn(
