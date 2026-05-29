@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2024-2026 FlossWare
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package org.flossware.jplatform.swing;
 
 import javax.swing.*;
@@ -16,10 +33,10 @@ import java.awt.*;
  *
  * @since 2.0
  */
-class DeployDialog extends JDialog {
+class DeployDialog extends Dialog {
 
-    private final JTextField applicationIdField;
-    private final JTextField mainClassField;
+    private final TextField applicationIdField;
+    private final TextField mainClassField;
     private boolean confirmed = false;
 
     /**
@@ -28,7 +45,7 @@ class DeployDialog extends JDialog {
      * @param parent the parent frame
      * @param jarPath the path to the JAR file being deployed
      */
-    public DeployDialog(JFrame parent, String jarPath) {
+    public DeployDialog(Frame parent, String jarPath) {
         super(parent, "Deploy Application", true);
 
         setLayout(new BorderLayout(10, 10));
@@ -36,7 +53,7 @@ class DeployDialog extends JDialog {
         setLocationRelativeTo(parent);
 
         // Form panel
-        JPanel formPanel = new JPanel(new GridBagLayout());
+        Panel formPanel = new Panel(new GridBagLayout());
         formPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.fill = GridBagConstraints.HORIZONTAL;
@@ -46,11 +63,11 @@ class DeployDialog extends JDialog {
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.weightx = 0.3;
-        formPanel.add(new JLabel("JAR File:"), gbc);
+        formPanel.add(new Label("JAR File:"), gbc);
 
         gbc.gridx = 1;
         gbc.weightx = 0.7;
-        JTextField jarPathField = new JTextField(jarPath);
+        TextField jarPathField = new TextField(jarPath);
         jarPathField.setEditable(false);
         jarPathField.setBackground(Color.LIGHT_GRAY);
         formPanel.add(jarPathField, gbc);
@@ -59,30 +76,30 @@ class DeployDialog extends JDialog {
         gbc.gridx = 0;
         gbc.gridy = 1;
         gbc.weightx = 0.3;
-        formPanel.add(new JLabel("Application ID:"), gbc);
+        formPanel.add(new Label("Application ID:"), gbc);
 
         gbc.gridx = 1;
         gbc.weightx = 0.7;
-        applicationIdField = new JTextField();
+        applicationIdField = new TextField();
         formPanel.add(applicationIdField, gbc);
 
         // Main class
         gbc.gridx = 0;
         gbc.gridy = 2;
         gbc.weightx = 0.3;
-        formPanel.add(new JLabel("Main Class:"), gbc);
+        formPanel.add(new Label("Main Class:"), gbc);
 
         gbc.gridx = 1;
         gbc.weightx = 0.7;
-        mainClassField = new JTextField();
+        mainClassField = new TextField();
         formPanel.add(mainClassField, gbc);
 
         add(formPanel, BorderLayout.CENTER);
 
         // Button panel
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        JButton okButton = new JButton("Deploy");
-        JButton cancelButton = new JButton("Cancel");
+        Panel buttonPanel = new Panel(new FlowLayout(FlowLayout.RIGHT));
+        Button okButton = new Button("Deploy");
+        Button cancelButton = new Button("Cancel");
 
         okButton.addActionListener(e -> {
             if (validateInput()) {

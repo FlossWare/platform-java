@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2024-2026 FlossWare
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package org.flossware.jplatform.swing;
 
 import org.flossware.jplatform.api.ApplicationState;
@@ -49,10 +66,10 @@ public class SwingConsole {
     private static final Logger logger = LoggerFactory.getLogger(SwingConsole.class);
 
     private final PlatformManager platformManager;
-    private final JFrame frame;
-    private final JTable applicationTable;
+    private final Frame frame;
+    private final Table applicationTable;
     private final DefaultTableModel tableModel;
-    private final JLabel statusLabel;
+    private final Label statusLabel;
     private final ScheduledExecutorService refreshExecutor;
 
     /**
@@ -66,7 +83,7 @@ public class SwingConsole {
         }
 
         this.platformManager = platformManager;
-        this.frame = new JFrame("JPlatform Management Console");
+        this.frame = new Frame("JPlatform Management Console");
         this.tableModel = new DefaultTableModel(
                 new String[]{"Application ID", "State", "CPU Time (ms)", "Heap (MB)", "Threads"},
                 0
@@ -76,8 +93,8 @@ public class SwingConsole {
                 return false; // Read-only table
             }
         };
-        this.applicationTable = new JTable(tableModel);
-        this.statusLabel = new JLabel("Ready");
+        this.applicationTable = new Table(tableModel);
+        this.statusLabel = new Label("Ready");
         this.refreshExecutor = Executors.newSingleThreadScheduledExecutor(r -> {
             Thread thread = new Thread(r, "swing-ui-refresh");
             thread.setDaemon(true);
@@ -105,29 +122,29 @@ public class SwingConsole {
         frame.setLayout(new BorderLayout());
 
         // Title panel
-        JPanel titlePanel = new JPanel();
+        Panel titlePanel = new Panel();
         titlePanel.setBackground(new Color(41, 128, 185));
-        JLabel titleLabel = new JLabel("JPlatform Management Console");
+        Label titleLabel = new Label("JPlatform Management Console");
         titleLabel.setFont(new Font("Arial", Font.BOLD, 20));
         titleLabel.setForeground(Color.WHITE);
         titlePanel.add(titleLabel);
         frame.add(titlePanel, BorderLayout.NORTH);
 
         // Center panel with table
-        JScrollPane scrollPane = new JScrollPane(applicationTable);
+        ScrollPane scrollPane = new ScrollPane(applicationTable);
         applicationTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         applicationTable.setRowHeight(25);
         applicationTable.getTableHeader().setFont(new Font("Arial", Font.BOLD, 12));
         frame.add(scrollPane, BorderLayout.CENTER);
 
         // Button panel
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        Panel buttonPanel = new Panel(new FlowLayout(FlowLayout.LEFT));
 
-        JButton deployButton = new JButton("Deploy");
-        JButton startButton = new JButton("Start");
-        JButton stopButton = new JButton("Stop");
-        JButton undeployButton = new JButton("Undeploy");
-        JButton refreshButton = new JButton("Refresh");
+        Button deployButton = new Button("Deploy");
+        Button startButton = new Button("Start");
+        Button stopButton = new Button("Stop");
+        Button undeployButton = new Button("Undeploy");
+        Button refreshButton = new Button("Refresh");
 
         deployButton.addActionListener(e -> deployApplication());
         startButton.addActionListener(e -> startSelectedApplication());
@@ -139,13 +156,13 @@ public class SwingConsole {
         buttonPanel.add(startButton);
         buttonPanel.add(stopButton);
         buttonPanel.add(undeployButton);
-        buttonPanel.add(new JSeparator(SwingConstants.VERTICAL));
+        buttonPanel.add(new Separator(SwingConstants.VERTICAL));
         buttonPanel.add(refreshButton);
 
         frame.add(buttonPanel, BorderLayout.SOUTH);
 
         // Status bar
-        JPanel statusPanel = new JPanel(new BorderLayout());
+        Panel statusPanel = new Panel(new BorderLayout());
         statusPanel.setBorder(BorderFactory.createEtchedBorder());
         statusLabel.setBorder(BorderFactory.createEmptyBorder(2, 5, 2, 5));
         statusPanel.add(statusLabel, BorderLayout.WEST);
@@ -402,12 +419,12 @@ public class SwingConsole {
     }
 
     /**
-     * Returns the JFrame for testing purposes.
+     * Returns the Frame for testing purposes.
      * Package-private for unit tests.
      *
      * @return the main frame
      */
-    JFrame getFrame() {
+    Frame getFrame() {
         return frame;
     }
 
@@ -427,7 +444,7 @@ public class SwingConsole {
      *
      * @return the status label
      */
-    JLabel getStatusLabel() {
+    Label getStatusLabel() {
         return statusLabel;
     }
 }

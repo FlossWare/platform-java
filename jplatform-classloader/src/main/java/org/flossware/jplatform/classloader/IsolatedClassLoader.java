@@ -1,7 +1,24 @@
+/*
+ * Copyright (C) 2024-2026 FlossWare
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package org.flossware.jplatform.classloader;
 
 import org.flossware.jclassloader.AuthConfig;
-import org.flossware.jclassloader.JClassLoader;
+import org.flossware.jclassloader.ApplicationClassLoader;
 import org.flossware.jclassloader.lifecycle.ResourceTrackingListener;
 import org.flossware.jplatform.api.ApplicationDescriptor;
 import org.slf4j.Logger;
@@ -14,7 +31,7 @@ import java.util.Objects;
 
 /**
  * Platform-specific class loader for isolated application execution.
- * Wraps JClassLoader with JPlatform-specific integration and configuration.
+ * Wraps ApplicationClassLoader with JPlatform-specific integration and configuration.
  */
 public class IsolatedClassLoader extends ClassLoader implements AutoCloseable {
 
@@ -23,12 +40,12 @@ public class IsolatedClassLoader extends ClassLoader implements AutoCloseable {
     private final String applicationId;
     private final ApplicationDescriptor descriptor;
     private final ResourceTrackingListener resourceTracker;
-    private final JClassLoader delegate;
+    private final ApplicationClassLoader delegate;
 
     private IsolatedClassLoader(String applicationId,
                                 ApplicationDescriptor descriptor,
                                 ResourceTrackingListener resourceTracker,
-                                JClassLoader delegate) {
+                                ApplicationClassLoader delegate) {
         super(delegate.getParent());
         this.applicationId = applicationId;
         this.descriptor = descriptor;
@@ -54,8 +71,8 @@ public class IsolatedClassLoader extends ClassLoader implements AutoCloseable {
 
         ResourceTrackingListener tracker = new ResourceTrackingListener();
 
-        // Build JClassLoader with platform-specific configuration
-        JClassLoader.Builder builder = JClassLoader.builder()
+        // Build ApplicationClassLoader with platform-specific configuration
+        ApplicationClassLoader.Builder builder = ApplicationClassLoader.builder()
                 .parent(platformSharedLoader)
                 // Platform-specific: parent-last with platform-java API exception
                 .parentLast(
@@ -84,13 +101,13 @@ public class IsolatedClassLoader extends ClassLoader implements AutoCloseable {
         // Platform-specific: Convert ApplicationDescriptor to class sources
         addClassSourcesFromDescriptor(builder, descriptor);
 
-        JClassLoader jcl = builder.build();
+        ApplicationClassLoader jcl = builder.build();
 
         return new IsolatedClassLoader(applicationId, descriptor, tracker, jcl);
     }
 
     /**
-     * Loads a class by delegating to the JClassLoader.
+     * Loads a class by delegating to the ApplicationClassLoader.
      *
      * @param name the name of the class to load
      * @param resolve whether to resolve the class
@@ -107,7 +124,7 @@ public class IsolatedClassLoader extends ClassLoader implements AutoCloseable {
     }
 
     /**
-     * Finds a class by delegating to the JClassLoader.
+     * Finds a class by delegating to the ApplicationClassLoader.
      *
      * @param name the name of the class to find
      * @return the loaded class
@@ -120,10 +137,10 @@ public class IsolatedClassLoader extends ClassLoader implements AutoCloseable {
     }
 
     /**
-     * Platform-specific: Translate ApplicationDescriptor to JClassLoader sources.
+     * Platform-specific: Translate ApplicationDescriptor to ApplicationClassLoader sources.
      */
     private static void addClassSourcesFromDescriptor(
-            JClassLoader.Builder builder,
+            ApplicationClassLoader.Builder builder,
             ApplicationDescriptor descriptor) {
 
         for (URI classpathEntry : descriptor.getClasspathEntries()) {

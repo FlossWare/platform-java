@@ -2,10 +2,10 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.flossware.jplatform</groupId>
-  <artifactId>platform-java</artifactId>
+  <artifactId>platform-java-parent</artifactId>
   <version>1.0</version>
   <packaging>pom</packaging>
-  <name>FlossWare Platform</name>
+  <name>FlossWare Platform Parent</name>
   <description>A platform for running multiple isolated Java applications within a single JVM</description>
   <url>https://github.com/FlossWare/platform-java</url>
   <licenses>
