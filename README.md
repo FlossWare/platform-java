@@ -653,6 +653,10 @@ Applications SHOULD use the provided `ManagedThreadPool`. Direct thread creation
 - [Security Guide](SECURITY.md) - Modern security enforcement without SecurityManager
 - [Resource Enforcement](RESOURCE_ENFORCEMENT.md) - CPU/memory/thread limit enforcement
 
+### Troubleshooting
+- [Libvirt Authentication Fix](docs/LIBVIRT_AUTHENTICATION_FIX.md) - Fix "System policy prevents management of local virtualized systems"
+- [General Troubleshooting](docs/TROUBLESHOOTING.md) - Common issues and solutions
+
 ### Project Status
 - [Enhancement Status](ENHANCEMENTS_STATUS.md) - Feature implementation tracking
 - [Release Notes](RELEASE_NOTES.md) - Version history and changelog
